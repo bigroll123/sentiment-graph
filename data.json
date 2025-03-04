@@ -154,6 +154,13 @@
         "avg_title_score": 7.0
     },
     {
+        "entity": "Apple",
+        "domain": "offnews.bg",
+        "avg_entity_score": 7.0,
+        "avg_article_score": 7.0,
+        "avg_title_score": 5.0
+    },
+    {
         "entity": "auto.blitz.bg",
         "domain": "blitz.bg",
         "avg_entity_score": 3.0,
@@ -896,6 +903,13 @@
         "avg_title_score": 3.0
     },
     {
+        "entity": "Yettel",
+        "domain": "offnews.bg",
+        "avg_entity_score": 8.0,
+        "avg_article_score": 7.0,
+        "avg_title_score": 5.0
+    },
+    {
         "entity": "Yousuke Yukimatsu",
         "domain": "blitz.bg",
         "avg_entity_score": 7.0,
@@ -1524,6 +1538,13 @@
         "avg_entity_score": 4.0,
         "avg_article_score": 6.0,
         "avg_title_score": 7.0
+    },
+    {
+        "entity": "Антон Пински",
+        "domain": "offnews.bg",
+        "avg_entity_score": 2.0,
+        "avg_article_score": 4.0,
+        "avg_title_score": 3.0
     },
     {
         "entity": "апаш",
@@ -3414,6 +3435,13 @@
         "avg_entity_score": 4.0,
         "avg_article_score": 3.0,
         "avg_title_score": -2.0
+    },
+    {
+        "entity": "Величие",
+        "domain": "offnews.bg",
+        "avg_entity_score": -2.0,
+        "avg_article_score": 2.0,
+        "avg_title_score": 3.0
     },
     {
         "entity": "Величие",
@@ -5355,6 +5383,13 @@
         "avg_title_score": -7.0
     },
     {
+        "entity": "Доли Партън",
+        "domain": "offnews.bg",
+        "avg_entity_score": 9.0,
+        "avg_article_score": 6.0,
+        "avg_title_score": 7.0
+    },
+    {
         "entity": "Доналд Тръмп",
         "domain": "blitz.bg",
         "avg_entity_score": -1.75,
@@ -5364,9 +5399,9 @@
     {
         "entity": "Доналд Тръмп",
         "domain": "offnews.bg",
-        "avg_entity_score": -3.21,
-        "avg_article_score": -0.45,
-        "avg_title_score": -0.42
+        "avg_entity_score": -3.38,
+        "avg_article_score": -0.65,
+        "avg_title_score": -0.65
     },
     {
         "entity": "Доналд Тръмп",
@@ -6832,6 +6867,13 @@
         "avg_title_score": -7.0
     },
     {
+        "entity": "Ивана",
+        "domain": "offnews.bg",
+        "avg_entity_score": -7.0,
+        "avg_article_score": -7.0,
+        "avg_title_score": -8.0
+    },
+    {
         "entity": "Иван Алексиев",
         "domain": "pik.bg",
         "avg_entity_score": 5.0,
@@ -7233,9 +7275,9 @@
     {
         "entity": "Информационно обслужване",
         "domain": "offnews.bg",
-        "avg_entity_score": 0.0,
+        "avg_entity_score": 2.0,
         "avg_article_score": 2.0,
-        "avg_title_score": 5.0
+        "avg_title_score": 4.0
     },
     {
         "entity": "Информационно обслужване",
@@ -7560,6 +7602,13 @@
         "avg_title_score": 8.0
     },
     {
+        "entity": "Карл Дийн",
+        "domain": "offnews.bg",
+        "avg_entity_score": 8.0,
+        "avg_article_score": 6.0,
+        "avg_title_score": 7.0
+    },
+    {
         "entity": "Карловчанка",
         "domain": "blitz.bg",
         "avg_entity_score": -8.0,
@@ -7845,6 +7894,13 @@
         "avg_entity_score": -6.0,
         "avg_article_score": -3.0,
         "avg_title_score": -5.0
+    },
+    {
+        "entity": "Кирил Дмитриев",
+        "domain": "offnews.bg",
+        "avg_entity_score": 1.0,
+        "avg_article_score": 4.0,
+        "avg_title_score": 3.0
     },
     {
         "entity": "Кирил Добрев",
@@ -8209,6 +8265,13 @@
         "avg_entity_score": -1.0,
         "avg_article_score": -2.0,
         "avg_title_score": -2.67
+    },
+    {
+        "entity": "Конституционния съд",
+        "domain": "offnews.bg",
+        "avg_entity_score": 3.0,
+        "avg_article_score": 2.0,
+        "avg_title_score": 3.0
     },
     {
         "entity": "Конституционният съд",
@@ -13237,6 +13300,13 @@
         "avg_title_score": 4.0
     },
     {
+        "entity": "Росица Матева",
+        "domain": "offnews.bg",
+        "avg_entity_score": 2.0,
+        "avg_article_score": 2.0,
+        "avg_title_score": 3.0
+    },
+    {
         "entity": "Роскосмос",
         "domain": "pik.bg",
         "avg_entity_score": 1.0,
@@ -13540,9 +13610,9 @@
     {
         "entity": "САЩ",
         "domain": "offnews.bg",
-        "avg_entity_score": 0.48,
-        "avg_article_score": 0.68,
-        "avg_title_score": 0.68
+        "avg_entity_score": 0.38,
+        "avg_article_score": 0.81,
+        "avg_title_score": 0.77
     },
     {
         "entity": "САЩ",
@@ -14413,6 +14483,13 @@
         "avg_title_score": 1.0
     },
     {
+        "entity": "Старбъкс",
+        "domain": "offnews.bg",
+        "avg_entity_score": 7.0,
+        "avg_article_score": 4.0,
+        "avg_title_score": 3.0
+    },
+    {
         "entity": "Старлинк",
         "domain": "www.mediapool.bg",
         "avg_entity_score": -2.0,
@@ -14964,6 +15041,13 @@
         "avg_entity_score": 6.0,
         "avg_article_score": 5.0,
         "avg_title_score": -1.0
+    },
+    {
+        "entity": "Тимати",
+        "domain": "offnews.bg",
+        "avg_entity_score": 2.0,
+        "avg_article_score": 4.0,
+        "avg_title_score": 3.0
     },
     {
         "entity": "Тимчо Муцунски",
@@ -15778,6 +15862,13 @@
         "avg_title_score": 7.0
     },
     {
+        "entity": "Фред",
+        "domain": "offnews.bg",
+        "avg_entity_score": -2.0,
+        "avg_article_score": -7.0,
+        "avg_title_score": -8.0
+    },
+    {
         "entity": "Френската префектура",
         "domain": "pik.bg",
         "avg_entity_score": 2.0,
@@ -16004,9 +16095,9 @@
     {
         "entity": "Хитлер",
         "domain": "offnews.bg",
-        "avg_entity_score": -9.0,
-        "avg_article_score": 5.0,
-        "avg_title_score": 7.0
+        "avg_entity_score": -9.5,
+        "avg_article_score": -1.0,
+        "avg_title_score": -0.5
     },
     {
         "entity": "Холивуд",
@@ -16308,6 +16399,13 @@
         "avg_entity_score": -5.0,
         "avg_article_score": -4.0,
         "avg_title_score": -5.0
+    },
+    {
+        "entity": "ЦИК",
+        "domain": "offnews.bg",
+        "avg_entity_score": 5.0,
+        "avg_article_score": 2.0,
+        "avg_title_score": 3.0
     },
     {
         "entity": "ЦИК",
