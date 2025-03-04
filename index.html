@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entity Score Visualization</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- DataTables.js for filtering -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt/css/jquery.dataTables.min.css">
+
+</head>
+<body>
+
+    <h2>Entity Score Visualization</h2>
+
+    <!-- Dropdowns for selection -->
+    <label for="entityFilter">Select Entity:</label>
+    <select id="entityFilter" multiple></select>
+
+    <label for="domainFilter">Select Domain:</label>
+    <select id="domainFilter" multiple></select>
+
+    <button onclick="updateGraph()">Apply Filter</button>
+
+    <!-- Table for Data Preview -->
+    <table id="dataTable" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>Entity</th>
+                <th>Domain</th>
+                <th>Avg Entity Score</th>
+                <th>Avg Article Score</th>
+                <th>Avg Title Score</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <!-- Chart -->
+    <canvas id="myChart"></canvas>
+
+    <script>
+        let rawData = [];
+        let chart;
+
+        async function fetchData() {
+            const response = await fetch('data.json'); // Load JSON
+            rawData = await response.json();
+
+            populateFilters();
+            populateTable(rawData);
+            updateGraph(); // Initial graph
+        }
+
+        function populateFilters() {
+            const entities = [...new Set(rawData.map(item => item.entity))];
+            const domains = [...new Set(rawData.map(item => item.domain))];
+
+            const entitySelect = document.getElementById("entityFilter");
+            entities.forEach(entity => {
+                let option = document.createElement("option");
+                option.value = entity;
+                option.text = entity;
+                entitySelect.appendChild(option);
+            });
+
+            const domainSelect = document.getElementById("domainFilter");
+            domains.forEach(domain => {
+                let option = document.createElement("option");
+                option.value = domain;
+                option.text = domain;
+                domainSelect.appendChild(option);
+            });
+        }
+
+        function populateTable(data) {
+            let table = $('#dataTable').DataTable();
+            table.clear();
+            data.forEach(row => {
+                table.row.add([row.entity, row.domain, row.avg_entity_score, row.avg_article_score, row.avg_title_score]);
+            });
+            table.draw();
+        }
+
+        function updateGraph() {
+            const selectedEntities = Array.from(document.getElementById("entityFilter").selectedOptions).map(option => option.value);
+            const selectedDomains = Array.from(document.getElementById("domainFilter").selectedOptions).map(option => option.value);
+
+            let filteredData = rawData.filter(item => 
+                (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
+                (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
+            );
+
+            populateTable(filteredData);
+
+            const labels = filteredData.map(item => item.entity);
+            const avgEntityScores = filteredData.map(item => item.avg_entity_score);
+            const avgArticleScores = filteredData.map(item => item.avg_article_score);
+            const avgTitleScores = filteredData.map(item => item.avg_title_score);
+
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (chart) chart.destroy();
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Avg Entity Score', data: avgEntityScores, backgroundColor: 'blue' },
+                        { label: 'Avg Article Score', data: avgArticleScores, backgroundColor: 'green' },
+                        { label: 'Avg Title Score', data: avgTitleScores, backgroundColor: 'red' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        fetchData();
+    </script>
+
+</body>
+</html>
+
