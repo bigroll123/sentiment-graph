@@ -88,26 +88,39 @@
             const response = await fetch('data.json'); // Load JSON
             rawData = await response.json();
 
+            console.log("Loaded Data:", rawData); // Debugging to check if JSON loads properly
+
             populateFilters();
             populateTable(rawData);
             updateGraph(); // Initial graph
         }
 
         function populateFilters() {
-            const entitySet = new Set(rawData.map(item => item.entity));
-            const domainSet = new Set(rawData.map(item => item.domain));
+            const entitySet = new Set();
+            const domainSet = new Set();
 
+            // Collect unique entities and domains
+            rawData.forEach(item => {
+                if (item.entity) entitySet.add(item.entity);
+                if (item.domain) domainSet.add(item.domain);
+            });
+
+            // Populate entity dropdown
             const entitySelect = $("#entityFilter");
-            entitySelect.empty();
+            entitySelect.empty(); // Clear existing options
             entitySet.forEach(entity => {
                 entitySelect.append(`<option value="${entity}">${entity}</option>`);
             });
 
+            // Populate domain dropdown
             const domainSelect = $("#domainFilter");
-            domainSelect.empty();
+            domainSelect.empty(); // Clear existing options
             domainSet.forEach(domain => {
                 domainSelect.append(`<option value="${domain}">${domain}</option>`);
             });
+
+            console.log("Entities loaded:", Array.from(entitySet)); // Debugging
+            console.log("Domains loaded:", Array.from(domainSet)); // Debugging
 
             // Refresh Bootstrap Select to apply checkboxes
             $('.selectpicker').selectpicker('refresh');
