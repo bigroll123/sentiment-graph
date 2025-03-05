@@ -106,7 +106,6 @@
 
             populateFilters();
             populateTable(processedData);
-            updateGraph();
         }
 
         function populateFilters() {
@@ -132,6 +131,10 @@
                 table.row.add([row.entity, row.domain, row.avg_title_score, row.avg_article_score]);
             });
             table.draw();
+        }
+
+        function updateGraph() {
+            console.log("Updating Graph...");
         }
 
         $(document).ready(fetchData);
