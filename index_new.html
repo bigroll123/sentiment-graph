@@ -61,17 +61,16 @@
     <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
     <script>
         let rawData = [];
+        let processedData = [];
         let chart;
 
         async function fetchData() {
             try {
                 console.log("Fetching data.json...");
                 const response = await fetch('data_new.json'); 
-
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
-
                 rawData = await response.json();
                 console.log("Parsed JSON:", rawData);
                 aggregateData();
@@ -108,6 +107,22 @@
             populateFilters();
             populateTable(processedData);
             updateGraph();
+        }
+
+        function populateFilters() {
+            const entitySet = new Set();
+            const domainSet = new Set();
+            processedData.forEach(item => {
+                entitySet.add(item.entity);
+                domainSet.add(item.domain);
+            });
+            const entitySelect = $("#entityFilter");
+            entitySelect.empty();
+            entitySet.forEach(entity => entitySelect.append(`<option value="${entity}">${entity}</option>`));
+            const domainSelect = $("#domainFilter");
+            domainSelect.empty();
+            domainSet.forEach(domain => domainSelect.append(`<option value="${domain}">${domain}</option>`));
+            $('.selectpicker').selectpicker('refresh');
         }
 
         function populateTable(data) {
