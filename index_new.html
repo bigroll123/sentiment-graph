@@ -81,36 +81,42 @@
         }
 
         function aggregateData() {
-            const aggregatedData = {};
-            rawData.forEach(({ entity, domain, avg_entity_score, avg_title_score, avg_article_score }) => {
-                const key = `${entity}-${domain}`;
-                if (!aggregatedData[key]) {
-                    aggregatedData[key] = {
-                        entity,
-                        domain,
-                        totalEntityScore: 0,
-                        totalTitleScore: 0,
-                        totalOverallScore: 0,
-                        count: 0
-                    };
-                }
-                aggregatedData[key].totalEntityScore += avg_entity_score;
-                aggregatedData[key].totalTitleScore += avg_title_score;
-                aggregatedData[key].totalOverallScore += avg_article_score;
-                aggregatedData[key].count++;
-            });
-
-            processedData = Object.values(aggregatedData).map(item => ({
+            processedData = rawData.map(item => ({
                 entity: item.entity,
                 domain: item.domain,
-                avg_entity_score: (item.totalEntityScore / item.count).toFixed(2),
-                avg_title_score: (item.totalTitleScore / item.count).toFixed(2),
-                avg_article_score: (item.totalOverallScore / item.count).toFixed(2)
+                avg_entity_score: item.avg_entity_score,
+                avg_title_score: item.avg_title_score,
+                avg_article_score: item.avg_article_score
             }));
-
+            
             populateFilters();
             populateTable(processedData);
             updateGraph();
+        }
+
+        function populateFilters() {
+            const entitySet = new Set();
+            const domainSet = new Set();
+            processedData.forEach(item => {
+                entitySet.add(item.entity);
+                domainSet.add(item.domain);
+            });
+            const entitySelect = $("#entityFilter");
+            entitySelect.empty();
+            entitySet.forEach(entity => entitySelect.append(`<option value="${entity}">${entity}</option>`));
+            const domainSelect = $("#domainFilter");
+            domainSelect.empty();
+            domainSet.forEach(domain => domainSelect.append(`<option value="${domain}">${domain}</option>`));
+            $('.selectpicker').selectpicker('refresh');
+        }
+
+        function populateTable(data) {
+            let table = $('#dataTable').DataTable();
+            table.clear();
+            data.forEach(row => {
+                table.row.add([row.entity, row.domain, row.avg_entity_score, row.avg_title_score, row.avg_article_score]);
+            });
+            table.draw();
         }
 
         function updateGraph() {
