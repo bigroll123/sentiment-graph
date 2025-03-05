@@ -38,7 +38,7 @@
                 <select id="domainFilter" class="selectpicker form-control" multiple data-live-search="true" data-actions-box="true"></select>
             </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-primary w-100" onclick="updateGraph()">Apply</button>
+                <button class="btn btn-primary w-100" onclick="applyFilters()">Apply</button>
             </div>
         </div>
         <table id="dataTable" class="table table-striped">
@@ -91,7 +91,7 @@
             
             populateFilters();
             populateTable(processedData);
-            updateGraph();
+            updateGraph(processedData);
         }
 
         function populateFilters() {
@@ -119,11 +119,25 @@
             table.draw();
         }
 
-        function updateGraph() {
-            const labels = processedData.map(item => `${item.entity} (${item.domain})`);
-            const entityScores = processedData.map(item => item.avg_entity_score);
-            const titleScores = processedData.map(item => item.avg_title_score);
-            const articleScores = processedData.map(item => item.avg_article_score);
+        function applyFilters() {
+            const selectedEntities = $('#entityFilter').val() || [];
+            const selectedDomains = $('#domainFilter').val() || [];
+            
+            let filteredData = processedData.filter(item => 
+                (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
+                (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
+            );
+            
+            console.log("Filtered Data:", filteredData);
+            populateTable(filteredData);
+            updateGraph(filteredData);
+        }
+
+        function updateGraph(data) {
+            const labels = data.map(item => `${item.entity} (${item.domain})`);
+            const entityScores = data.map(item => item.avg_entity_score);
+            const titleScores = data.map(item => item.avg_title_score);
+            const articleScores = data.map(item => item.avg_article_score);
             
             const ctx = document.getElementById('myChart').getContext('2d');
             if (chart) chart.destroy();
