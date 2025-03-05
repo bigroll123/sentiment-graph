@@ -134,7 +134,16 @@
         }
 
         function updateGraph() {
-            console.log("Updating Graph...");
+            const selectedEntities = $('#entityFilter').val() || [];
+            const selectedDomains = $('#domainFilter').val() || [];
+            
+            let filteredData = processedData.filter(item => 
+                (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
+                (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
+            );
+            
+            console.log("Filtered Data:", filteredData);
+            populateTable(filteredData);
         }
 
         $(document).ready(fetchData);
