@@ -99,11 +99,14 @@
     let rawData = [];
     let chart;
     const CLOUDFLARE_WORKER_URL = "https://senti-wrk.kj-kalin.workers.dev";
+    const API_KEY = CLOUDFLARE_KV_SECRET; // Injected from Cloudflare Pages Environment Variables
 
     // 🚀 Fetch available domains on page load
     async function fetchAvailableDomains() {
       try {
-        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/domains`);
+        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/domains`, {
+          headers: { "Authorization": `Bearer ${API_KEY}` }
+        });
         if (!response.ok) throw new Error("Failed to fetch domains");
 
         const domains = await response.json();
@@ -132,7 +135,9 @@
     // 📡 Fetch all stored data on page load
     async function fetchAllData() {
       try {
-        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all`);
+        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all`, {
+          headers: { "Authorization": `Bearer ${API_KEY}` }
+        });
         if (!response.ok) throw new Error("Failed to fetch all data");
 
         rawData = await response.json();
@@ -144,49 +149,6 @@
       } catch (error) {
         console.error("Error fetching all data:", error);
       }
-    }
-
-    // 🏷️ Populate entity dropdown
-    function populateFilters() {
-      const entitySet = new Set();
-
-      rawData.forEach(domainData => {
-        domainData.records.forEach(record => {
-          entitySet.add(record.entity);
-        });
-      });
-
-      const entitySelect = $("#entityFilter");
-      entitySelect.empty();
-      entitySet.forEach(entity => {
-        entitySelect.append(`<option value="${entity}">${entity}</option>`);
-      });
-
-      $('.selectpicker').selectpicker('refresh');
-    }
-
-    // 📊 Populate the table
-    function populateTable(data) {
-      let table = $('#dataTable').DataTable();
-      table.clear();
-      data.forEach(row => {
-        table.row.add([row.entity, row.domain, row.avg_entity_score, row.avg_article_score, row.avg_title_score]);
-      });
-      table.draw();
-    }
-
-    // 📈 Update the graph
-    function updateGraph() {
-      const selectedEntities = $('#entityFilter').val() || [];
-      const selectedDomains = $('#domainFilter').val() || [];
-
-      let filteredData = rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain })))
-        .filter(item =>
-          (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
-          (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
-        );
-
-      populateTable(filteredData);
     }
 
     // 🏁 On Page Load → Fetch available domains first
