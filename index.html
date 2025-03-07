@@ -131,6 +131,14 @@
         console.error("Error fetching all data:", error);
       }
     }
+    // 🎯 Update UI after fetching data
+    function updateDataDisplay() {
+      console.log("Updating UI with data...");
+
+      populateFilters();
+      populateTable(rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain }))));
+      updateGraph();
+    }
 
     // 🚀 On Page Load → Fetch available domains first
     $(document).ready(function () {
