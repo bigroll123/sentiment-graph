@@ -63,9 +63,9 @@
                 <tr>
                     <th>Entity</th>
                     <th>Domain</th>
-                    <th>Avg Entity Score</th>
-                    <th>Avg Article Score</th>
-                    <th>Avg Title Score</th>
+                    <th>Entity Score</th>
+                    <th>Overall Score</th>
+                    <th>Title Score</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -144,7 +144,7 @@
             } else {
                 let domainData = [];
                 for (const domain of selectedDomains) {
-                    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all?domain=${domain}`);
+                    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve?domain=${domain}`);
                     if (response.ok) {
                         const data = await response.json();
                         domainData.push({ domain, records: data });
@@ -191,9 +191,9 @@
                 table.row.add([
                     row.entity || "Unknown",
                     row.domain || "Unknown",
-                    row.avg_entity_score !== undefined ? row.avg_entity_score : "N/A",
-                    row.avg_article_score !== undefined ? row.avg_article_score : "N/A",
-                    row.avg_title_score !== undefined ? row.avg_title_score : "N/A"
+                    row.entity_score !== undefined ? row.entity_score : "N/A",
+                    row.overall_score !== undefined ? row.overall_score : "N/A",
+                    row.title_score !== undefined ? row.title_score : "N/A"
                 ]);
             });
 
@@ -205,14 +205,14 @@
             if (chart) chart.destroy();
             
             const labels = rawData.flatMap(d => d.records.map(r => `${r.entity} (${d.domain})`));
-            const avgEntityScores = rawData.flatMap(d => d.records.map(r => r.avg_entity_score || 0));
+            const entityScores = rawData.flatMap(d => d.records.map(r => r.entity_score || 0));
 
             const ctx = document.getElementById('myChart').getContext('2d');
             chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'Avg Entity Score', data: avgEntityScores, backgroundColor: 'blue' }]
+                    datasets: [{ label: 'Entity Score', data: entityScores, backgroundColor: 'blue' }]
                 },
                 options: { responsive: true, scales: { y: { beginAtZero: true } } }
             });
