@@ -186,9 +186,17 @@
         function populateTable(data) {
             let table = $('#dataTable').DataTable();
             table.clear();
+
             data.forEach(row => {
-                table.row.add([row.entity, row.domain, row.avg_entity_score, row.avg_article_score, row.avg_title_score]);
+                table.row.add([
+                    row.entity || "Unknown",
+                    row.domain || "Unknown",
+                    row.avg_entity_score !== undefined ? row.avg_entity_score : "N/A",
+                    row.avg_article_score !== undefined ? row.avg_article_score : "N/A",
+                    row.avg_title_score !== undefined ? row.avg_title_score : "N/A"
+                ]);
             });
+
             table.draw();
         }
 
@@ -196,30 +204,15 @@
         function updateGraph() {
             if (chart) chart.destroy();
             
-            const selectedEntities = $('#entityFilter').val() || [];
-            const selectedDomains = $('#domainFilter').val() || [];
-
-            let filteredData = rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain })))
-                .filter(item => 
-                    (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
-                    (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
-                );
-
-            const labels = filteredData.map(item => `${item.entity} (${item.domain})`);
-            const avgEntityScores = filteredData.map(item => item.avg_entity_score);
-            const avgArticleScores = filteredData.map(item => item.avg_article_score);
-            const avgTitleScores = filteredData.map(item => item.avg_title_score);
+            const labels = rawData.flatMap(d => d.records.map(r => `${r.entity} (${d.domain})`));
+            const avgEntityScores = rawData.flatMap(d => d.records.map(r => r.avg_entity_score || 0));
 
             const ctx = document.getElementById('myChart').getContext('2d');
             chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [
-                        { label: 'Avg Entity Score', data: avgEntityScores, backgroundColor: 'blue' },
-                        { label: 'Avg Article Score', data: avgArticleScores, backgroundColor: 'green' },
-                        { label: 'Avg Title Score', data: avgTitleScores, backgroundColor: 'red' }
-                    ]
+                    datasets: [{ label: 'Avg Entity Score', data: avgEntityScores, backgroundColor: 'blue' }]
                 },
                 options: { responsive: true, scales: { y: { beginAtZero: true } } }
             });
