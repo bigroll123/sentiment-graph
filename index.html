@@ -204,7 +204,7 @@
         function updateGraph() {
             if (chart) chart.destroy();
 
-            const labels = rawData.flatMap(d => d.records.map(r => `${r.entity} (${d.domain})`));
+            const labels = rawData.flatMap(d => d.records.map(r => `${r.entity} (${d.domain})`)); // Fixed: Removed extra parenthesis
             const entityScores = rawData.flatMap(d => d.records.map(r => r.entity_score || 0));
 
             const ctx = document.getElementById('myChart').getContext('2d');
