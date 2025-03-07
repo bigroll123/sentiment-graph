@@ -144,7 +144,7 @@
             } else {
                 let domainData = [];
                 for (const domain of selectedDomains) {
-                    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve?domain=${domain}`);
+                    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all?domain=${domain}`);
                     if (response.ok) {
                         const data = await response.json();
                         domainData.push({ domain, records: data });
@@ -160,7 +160,7 @@
             console.log("Updating UI with data...");
 
             populateFilters();
-            populateTable(rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain }))));
+            populateTable(rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain })));
             updateGraph();
         }
 
@@ -191,9 +191,9 @@
                 table.row.add([
                     row.entity || "Unknown",
                     row.domain || "Unknown",
-                    row.entity_score !== undefined ? row.entity_score : "N/A",
-                    row.overall_score !== undefined ? row.overall_score : "N/A",
-                    row.title_score !== undefined ? row.title_score : "N/A"
+                    row.entity_score !== undefined ? row.entity_score.toFixed(2) : "N/A",
+                    row.overall_score !== undefined ? row.overall_score.toFixed(2) : "N/A",
+                    row.title_score !== undefined ? row.title_score.toFixed(2) : "N/A"
                 ]);
             });
 
@@ -203,7 +203,7 @@
         // 📈 Update the graph
         function updateGraph() {
             if (chart) chart.destroy();
-            
+
             const labels = rawData.flatMap(d => d.records.map(r => `${r.entity} (${d.domain})`));
             const entityScores = rawData.flatMap(d => d.records.map(r => r.entity_score || 0));
 
@@ -222,8 +222,6 @@
         $(document).ready(function () {
             fetchAvailableDomains();
         });
-
     </script>
-
 </body>
 </html>
