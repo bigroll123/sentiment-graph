@@ -160,7 +160,7 @@
             console.log("Updating UI with data...");
 
             populateFilters();
-            populateTable(rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain })));
+            populateTable(rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain }))));
             updateGraph();
         }
 
