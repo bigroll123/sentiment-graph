@@ -1,167 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Позитивни & Негативни герои</title>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Позитивни & Негативни герои според медиите</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 
-  <!-- Bootstrap 5 (CSS) -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 (CSS) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Bootstrap Select -->
-  <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css">
+    <!-- Bootstrap Select -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css">
 
-  <!-- DataTables CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt/css/jquery.dataTables.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt/css/jquery.dataTables.min.css">
 
-  <style>
-    body {
-      padding: 20px;
-      background-color: #f8f9fa;
-    }
-
-    .container {
-      max-width: 1000px;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    canvas {
-      margin-top: 20px;
-    }
-  </style>
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1000px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        canvas {
+            margin-top: 20px;
+        }
+    </style>
 </head>
-
 <body>
 
-  <div class="container">
-    <h2 class="text-center mb-4">Позитивни & Негативни описани в медиите</h2>
+    <div class="container">
+        <h2 class="text-center mb-4">Позитивни & Негативни описани в медиите</h2>
 
-    <!-- Filters Row -->
-    <div class="row mb-3">
-      <div class="col-md-5">
-        <label for="entityFilter" class="form-label">Select Entities:</label>
-        <select id="entityFilter" class="selectpicker form-control" multiple data-live-search="true"
-          data-actions-box="true"></select>
-      </div>
-      <div class="col-md-5">
-        <label for="domainFilter" class="form-label">Select Domains:</label>
-        <select id="domainFilter" class="selectpicker form-control" multiple data-live-search="true"
-          data-actions-box="true">
-          <option value="all">All Domains</option>
-        </select>
-      </div>
-      <div class="col-md-2 d-flex align-items-end">
-        <button class="btn btn-primary w-100" onclick="updateGraph()">Apply</button>
-      </div>
+        <!-- Filters Row -->
+        <div class="row mb-3">
+            <div class="col-md-5">
+                <label for="entityFilter" class="form-label">Select Entities:</label>
+                <select id="entityFilter" class="selectpicker form-control" multiple data-live-search="true" data-actions-box="true"></select>
+            </div>
+            <div class="col-md-5">
+                <label for="domainFilter" class="form-label">Select Domains:</label>
+                <select id="domainFilter" class="selectpicker form-control" multiple data-live-search="true" data-actions-box="true">
+                    <option value="all">All Domains</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" onclick="updateGraph()">Apply</button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <table id="dataTable" class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Entity</th>
+                    <th>Domain</th>
+                    <th>Avg Entity Score</th>
+                    <th>Avg Article Score</th>
+                    <th>Avg Title Score</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <!-- Chart -->
+        <canvas id="myChart"></canvas>
     </div>
 
-    <!-- Table -->
-    <table id="dataTable" class="table table-striped">
-      <thead class="table-dark">
-        <tr>
-          <th>Entity</th>
-          <th>Domain</th>
-          <th>Avg Entity Score</th>
-          <th>Avg Article Score</th>
-          <th>Avg Title Score</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <!-- Chart -->
-    <canvas id="myChart"></canvas>
-  </div>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- jQuery -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap Select -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- DataTables.js -->
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
 
-  <!-- Bootstrap Select -->
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+    <script>
+        let rawData = [];
+        let chart;
+        const CLOUDFLARE_WORKER_URL = "https://senti-wrk.kj-kalin.workers.dev";  // Change to your worker URL
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        // 🚀 Fetch available domains on page load
+        async function fetchAvailableDomains() {
+            try {
+                const response = await fetch(`${CLOUDFLARE_WORKER_URL}/domains`);
+                if (!response.ok) throw new Error("Failed to fetch domains");
 
-  <!-- DataTables.js -->
-  <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
+                const domains = await response.json();
+                console.log("Available Domains:", domains);
 
-  <script>
-    let rawData = [];
-    let chart;
-    const CLOUDFLARE_WORKER_URL = "https://senti-wrk.kj-kalin.workers.dev";
-    const API_KEY = CLOUDFLARE_KV_SECRET; // Injected from Cloudflare Pages Environment Variables
+                populateDomainDropdown(domains);
+                fetchAllData(); // Fetch all data once domains are loaded
+            } catch (error) {
+                console.error("Error fetching domains:", error);
+            }
+        }
 
-    // 🚀 Fetch available domains on page load
-    async function fetchAvailableDomains() {
-      try {
-        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/domains`, {
-          headers: { "Authorization": `Bearer ${API_KEY}` }
+        // 🎯 Populate domain dropdown
+        function populateDomainDropdown(domains) {
+            const domainSelect = $("#domainFilter");
+            domainSelect.empty();
+            domainSelect.append(`<option value="all">All Domains</option>`);
+
+            domains.forEach(domain => {
+                domainSelect.append(`<option value="${domain}">${domain}</option>`);
+            });
+
+            $('.selectpicker').selectpicker('refresh');
+        }
+
+        // 📡 Fetch all stored data on page load
+        async function fetchAllData() {
+            try {
+                const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all`);
+                if (!response.ok) throw new Error("Failed to fetch all data");
+
+                rawData = await response.json();
+                console.log("Loaded Data:", rawData);
+
+                populateFilters();
+                populateTable(rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain }))));
+                updateGraph();
+            } catch (error) {
+                console.error("Error fetching all data:", error);
+            }
+        }
+
+        // 🏷️ Populate entity dropdown
+        function populateFilters() {
+            const entitySet = new Set();
+
+            rawData.forEach(domainData => {
+                domainData.records.forEach(record => {
+                    entitySet.add(record.entity);
+                });
+            });
+
+            const entitySelect = $("#entityFilter");
+            entitySelect.empty();
+            entitySet.forEach(entity => {
+                entitySelect.append(`<option value="${entity}">${entity}</option>`);
+            });
+
+            $('.selectpicker').selectpicker('refresh');
+        }
+
+        // 📊 Populate the table
+        function populateTable(data) {
+            let table = $('#dataTable').DataTable();
+            table.clear();
+            data.forEach(row => {
+                table.row.add([row.entity, row.domain, row.avg_entity_score, row.avg_article_score, row.avg_title_score]);
+            });
+            table.draw();
+        }
+
+        // 📈 Update the graph
+        function updateGraph() {
+            const selectedEntities = $('#entityFilter').val() || [];
+            const selectedDomains = $('#domainFilter').val() || [];
+
+            let filteredData = rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain })))
+                .filter(item => 
+                    (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
+                    (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
+                );
+
+            populateTable(filteredData);
+        }
+
+        // 🏁 On Page Load → Fetch available domains first
+        $(document).ready(function () {
+            fetchAvailableDomains();
         });
-        if (!response.ok) throw new Error("Failed to fetch domains");
 
-        const domains = await response.json();
-        console.log("Available Domains:", domains);
-
-        populateDomainDropdown(domains);
-        fetchAllData(); // Fetch all data once domains are loaded
-      } catch (error) {
-        console.error("Error fetching domains:", error);
-      }
-    }
-
-    // 🎯 Populate domain dropdown
-    function populateDomainDropdown(domains) {
-      const domainSelect = $("#domainFilter");
-      domainSelect.empty();
-      domainSelect.append(`<option value="all">All Domains</option>`);
-
-      domains.forEach(domain => {
-        domainSelect.append(`<option value="${domain}">${domain}</option>`);
-      });
-
-      $('.selectpicker').selectpicker('refresh');
-    }
-
-    // 📡 Fetch all stored data on page load
-    async function fetchAllData() {
-      try {
-        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all`, {
-          headers: { "Authorization": `Bearer ${API_KEY}` }
+        // 📡 Fetch data when the domain selection changes
+        $('#domainFilter').on('change', function () {
+            fetchAllData(); // Reload all data on domain change
         });
-        if (!response.ok) throw new Error("Failed to fetch all data");
+    </script>
 
-        rawData = await response.json();
-        console.log("Loaded Data:", rawData);
-
-        populateFilters();
-        populateTable(rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain }))));
-        updateGraph();
-      } catch (error) {
-        console.error("Error fetching all data:", error);
-      }
-    }
-
-    // 🏁 On Page Load → Fetch available domains first
-    $(document).ready(function () {
-      fetchAvailableDomains();
-    });
-
-    // 📡 Fetch data when the domain selection changes
-    $('#domainFilter').on('change', function () {
-      fetchAllData(); // Reload all data on domain change
-    });
-
-  </script>
 </body>
-
 </html>
