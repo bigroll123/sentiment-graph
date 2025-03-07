@@ -84,10 +84,11 @@
     <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
 
     <script>
-        const CLOUDFLARE_WORKER_URL = "https://senti-wrk.kj-kalin.workers.dev";
+        const CLOUDFLARE_WORKER_URL = "https://senti-wrk.kj-kalin.workers.dev";  // Update with your actual worker URL
         let rawData = [];
         let chart;
 
+        // 🚀 Fetch available domains on page load
         async function fetchAvailableDomains() {
             try {
                 console.log("Fetching available domains...");
@@ -98,12 +99,13 @@
                 console.log("Domains fetched:", domains);
 
                 populateDomainDropdown(domains);
-                fetchAllData();
+                fetchAllData();  // Fetch all data once domains are loaded
             } catch (error) {
                 console.error("Error fetching domains:", error);
             }
         }
 
+        // 🎯 Populate domain dropdown
         function populateDomainDropdown(domains) {
             const domainSelect = $("#domainFilter");
             domainSelect.empty();
@@ -116,6 +118,7 @@
             $('.selectpicker').selectpicker('refresh');
         }
 
+        // 📡 Fetch all stored data on page load
         async function fetchAllData() {
             try {
                 console.log("Fetching all data...");
@@ -131,33 +134,42 @@
             }
         }
 
+        // 🚀 Fetch data for selected domains
         async function fetchSelectedData() {
             const selectedDomains = $("#domainFilter").val();
             console.log("Fetching data for:", selectedDomains);
 
             if (selectedDomains.includes("all")) {
-                fetchAllData();
+                fetchAllData(); // Fetch all data if "All Domains" is selected
             } else {
-                let domainData = [];
-                for (const domain of selectedDomains) {
-                    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve?domain=${domain}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        domainData.push({ domain, records: data });
+                try {
+                    const domainData = [];
+                    for (const domain of selectedDomains) {
+                        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all?domain=${domain}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            domainData.push({ domain, records: data });
+                        }
                     }
+                    rawData = domainData; // Update rawData with filtered data
+                    updateDataDisplay(); // Refresh the UI
+                } catch (error) {
+                    console.error("Error fetching domain data:", error);
                 }
-                rawData = domainData;
-                updateDataDisplay();
             }
         }
 
+        // 🎯 Update UI after fetching data
         function updateDataDisplay() {
             console.log("Updating UI with data...");
-            populateFilters();
-            populateTable(rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain }))));
-            updateGraph();
+
+            populateFilters(); // Update entity dropdown
+            const filteredData = rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain })));
+            populateTable(filteredData); // Populate table with filtered data
+            updateGraph(); // Update the chart
         }
 
+        // 🏷️ Populate entity dropdown with unique entities
         function populateFilters() {
             const entitySet = new Set();
             rawData.forEach(domainData => {
@@ -175,11 +187,53 @@
             $('.selectpicker').selectpicker('refresh');
         }
 
+        // 📊 Populate the table with filtered data
+        function populateTable(data) {
+            const selectedEntities = $("#entityFilter").val(); // Get selected entities
+            let table = $('#dataTable').DataTable();
+            table.clear();
+
+            // Filter data based on selected entities
+            const filteredData = selectedEntities.length > 0
+                ? data.filter(row => selectedEntities.includes(row.entity))
+                : data;
+
+            // Populate the table with filtered data
+            filteredData.forEach(row => {
+                table.row.add([
+                    row.entity || "Unknown",
+                    row.domain || "Unknown",
+                    row.entity_score !== undefined ? row.entity_score.toFixed(2) : "N/A",
+                    row.overall_score !== undefined ? row.overall_score.toFixed(2) : "N/A",
+                    row.title_score !== undefined ? row.title_score.toFixed(2) : "N/A"
+                ]);
+            });
+
+            table.draw();
+        }
+
+        // 📈 Update the graph
+        function updateGraph() {
+            if (chart) chart.destroy();
+
+            const labels = rawData.flatMap(d => d.records.map(r => `${r.entity} (${d.domain})`));
+            const entityScores = rawData.flatMap(d => d.records.map(r => r.entity_score || 0));
+
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'Entity Score', data: entityScores, backgroundColor: 'blue' }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        // 🏁 On Page Load → Fetch available domains first
         $(document).ready(function () {
             fetchAvailableDomains();
         });
-
     </script>
-
 </body>
 </html>
