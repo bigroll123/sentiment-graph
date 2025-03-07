@@ -147,7 +147,7 @@
             } else {
                 for (const domain of selectedDomains) {
                     try {
-                        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve?domain=${domain}`);
+                        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all?domain=${domain}`);
                         if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
                         const data = await response.json();
