@@ -63,9 +63,9 @@
                 <tr>
                     <th>Entity</th>
                     <th>Domain</th>
-                    <th>Entity Score</th>
-                    <th>Overall Score</th>
-                    <th>Title Score</th>
+                    <th>Avg Entity Score</th>
+                    <th>Avg Overall Score</th>
+                    <th>Avg Title Score</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -142,26 +142,23 @@
 
             let domainData = [];
 
-            if (selectedDomains.includes("all")) {
-                fetchAllData();
-            } else {
-                for (const domain of selectedDomains) {
-                    try {
-                        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all?domain=${domain}`);
-                        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+            for (const domain of selectedDomains) {
+                try {
+                    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve?domain=${domain}`);
+                    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
-                        const data = await response.json();
-                        console.log(`Data for ${domain}:`, data);
+                    const data = await response.json();
+                    console.log(`Data for ${domain}:`, data);
 
-                        domainData.push({ domain, records: Array.isArray(data) ? data : [] });
+                    domainData.push({ domain, records: Array.isArray(data) ? data : [] });
 
-                    } catch (error) {
-                        console.error(`Error fetching data for ${domain}:`, error);
-                    }
+                } catch (error) {
+                    console.error(`Error fetching data for ${domain}:`, error);
                 }
-                rawData = domainData;
-                updateDataDisplay();
             }
+
+            rawData = domainData;
+            updateDataDisplay();
         }
 
         function updateDataDisplay() {
@@ -172,69 +169,53 @@
                 return;
             }
 
-            let formattedData = rawData.flatMap(d =>
-                d.records.map(r => ({
-                    ...r,
-                    domain: d.domain
-                }))
-            );
-
-            console.log("Formatted Data for Table:", formattedData);
+            let aggregatedData = aggregateData(rawData);
+            console.log("Aggregated Data for Table:", aggregatedData);
 
             populateFilters();
-            populateTable(formattedData);
+            populateTable(aggregatedData);
             updateGraph();
         }
 
-        function populateFilters() {
-            const entitySet = new Set();
-            rawData.forEach(domainData => {
-                domainData.records.forEach(record => {
-                    entitySet.add(record.entity);
+        function aggregateData(data) {
+            let entityMap = {};
+
+            data.forEach(d => {
+                d.records.forEach(r => {
+                    let key = `${r.entity}_${d.domain}`;
+                    if (!entityMap[key]) {
+                        entityMap[key] = { 
+                            entity: r.entity,
+                            domain: d.domain,
+                            entity_score: [],
+                            overall_score: [],
+                            title_score: []
+                        };
+                    }
+                    entityMap[key].entity_score.push(r.entity_score);
+                    entityMap[key].overall_score.push(r.overall_score);
+                    entityMap[key].title_score.push(r.title_score);
                 });
             });
 
-            const entitySelect = $("#entityFilter");
-            entitySelect.empty();
-            entitySet.forEach(entity => {
-                entitySelect.append(`<option value="${entity}">${entity}</option>`);
-            });
+            return Object.values(entityMap).map(e => ({
+                entity: e.entity,
+                domain: e.domain,
+                avg_entity_score: average(e.entity_score),
+                avg_overall_score: average(e.overall_score),
+                avg_title_score: average(e.title_score)
+            }));
+        }
 
-            $('.selectpicker').selectpicker('refresh');
+        function average(arr) {
+            return arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : "N/A";
         }
 
         function populateTable(data) {
             let table = $('#dataTable').DataTable();
             table.clear();
-
-            data.forEach(row => {
-                table.row.add([
-                    row.entity || "Unknown",
-                    row.domain || "Unknown",
-                    row.entity_score != null ? row.entity_score.toFixed(2) : "N/A",
-                    row.overall_score != null ? row.overall_score.toFixed(2) : "N/A",
-                    row.title_score != null ? row.title_score.toFixed(2) : "N/A"
-                ]);
-            });
-
+            table.rows.add(data);
             table.draw();
-        }
-
-        function updateGraph() {
-            if (chart) chart.destroy();
-
-            const labels = rawData.flatMap(d => d.records.map(r => `${r.entity} (${d.domain})`));
-            const entityScores = rawData.flatMap(d => d.records.map(r => r.entity_score || 0));
-
-            const ctx = document.getElementById('myChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{ label: 'Entity Score', data: entityScores, backgroundColor: 'blue' }]
-                },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
-            });
         }
 
         $(document).ready(function () {
