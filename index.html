@@ -84,11 +84,10 @@
     <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
 
     <script>
-        const CLOUDFLARE_WORKER_URL = "https://senti-wrk.kj-kalin.workers.dev";  // Update with your actual worker URL
+        const CLOUDFLARE_WORKER_URL = "https://senti-wrk.kj-kalin.workers.dev";
         let rawData = [];
         let chart;
 
-        // 🚀 Fetch available domains on page load
         async function fetchAvailableDomains() {
             try {
                 console.log("Fetching available domains...");
@@ -99,13 +98,12 @@
                 console.log("Domains fetched:", domains);
 
                 populateDomainDropdown(domains);
-                fetchAllData();  // Fetch all data once domains are loaded
+                fetchAllData();
             } catch (error) {
                 console.error("Error fetching domains:", error);
             }
         }
 
-        // 🎯 Populate domain dropdown
         function populateDomainDropdown(domains) {
             const domainSelect = $("#domainFilter");
             domainSelect.empty();
@@ -118,7 +116,6 @@
             $('.selectpicker').selectpicker('refresh');
         }
 
-        // 📡 Fetch all stored data on page load
         async function fetchAllData() {
             try {
                 console.log("Fetching all data...");
@@ -134,42 +131,61 @@
             }
         }
 
-        // 🚀 Fetch data for selected domains
         async function fetchSelectedData() {
             const selectedDomains = $("#domainFilter").val();
             console.log("Fetching data for:", selectedDomains);
 
+            if (!selectedDomains || selectedDomains.length === 0) {
+                console.warn("No domains selected.");
+                return;
+            }
+
+            let domainData = [];
+
             if (selectedDomains.includes("all")) {
-                fetchAllData(); // Fetch all data if "All Domains" is selected
+                fetchAllData();
             } else {
-                try {
-                    const domainData = [];
-                    for (const domain of selectedDomains) {
-                        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all?domain=${domain}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            domainData.push({ domain, records: data });
-                        }
+                for (const domain of selectedDomains) {
+                    try {
+                        const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve?domain=${domain}`);
+                        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+
+                        const data = await response.json();
+                        console.log(`Data for ${domain}:`, data);
+
+                        domainData.push({ domain, records: Array.isArray(data) ? data : [] });
+
+                    } catch (error) {
+                        console.error(`Error fetching data for ${domain}:`, error);
                     }
-                    rawData = domainData; // Update rawData with filtered data
-                    updateDataDisplay(); // Refresh the UI
-                } catch (error) {
-                    console.error("Error fetching domain data:", error);
                 }
+                rawData = domainData;
+                updateDataDisplay();
             }
         }
 
-        // 🎯 Update UI after fetching data
         function updateDataDisplay() {
             console.log("Updating UI with data...");
 
-            populateFilters(); // Update entity dropdown
-            const filteredData = rawData.flatMap(d => d.records.map(r => ({ ...r, domain: d.domain })));
-            populateTable(filteredData); // Populate table with filtered data
-            updateGraph(); // Update the chart
+            if (!rawData || rawData.length === 0) {
+                console.warn("No data available to update.");
+                return;
+            }
+
+            let formattedData = rawData.flatMap(d =>
+                d.records.map(r => ({
+                    ...r,
+                    domain: d.domain
+                }))
+            );
+
+            console.log("Formatted Data for Table:", formattedData);
+
+            populateFilters();
+            populateTable(formattedData);
+            updateGraph();
         }
 
-        // 🏷️ Populate entity dropdown with unique entities
         function populateFilters() {
             const entitySet = new Set();
             rawData.forEach(domainData => {
@@ -187,32 +203,23 @@
             $('.selectpicker').selectpicker('refresh');
         }
 
-        // 📊 Populate the table with filtered data
         function populateTable(data) {
-            const selectedEntities = $("#entityFilter").val(); // Get selected entities
             let table = $('#dataTable').DataTable();
             table.clear();
 
-            // Filter data based on selected entities
-            const filteredData = selectedEntities.length > 0
-                ? data.filter(row => selectedEntities.includes(row.entity))
-                : data;
-
-            // Populate the table with filtered data
-            filteredData.forEach(row => {
+            data.forEach(row => {
                 table.row.add([
                     row.entity || "Unknown",
                     row.domain || "Unknown",
-                    row.entity_score !== undefined ? row.entity_score.toFixed(2) : "N/A",
-                    row.overall_score !== undefined ? row.overall_score.toFixed(2) : "N/A",
-                    row.title_score !== undefined ? row.title_score.toFixed(2) : "N/A"
+                    row.entity_score != null ? row.entity_score.toFixed(2) : "N/A",
+                    row.overall_score != null ? row.overall_score.toFixed(2) : "N/A",
+                    row.title_score != null ? row.title_score.toFixed(2) : "N/A"
                 ]);
             });
 
             table.draw();
         }
 
-        // 📈 Update the graph
         function updateGraph() {
             if (chart) chart.destroy();
 
@@ -230,10 +237,11 @@
             });
         }
 
-        // 🏁 On Page Load → Fetch available domains first
         $(document).ready(function () {
             fetchAvailableDomains();
         });
+
     </script>
+
 </body>
 </html>
