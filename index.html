@@ -62,7 +62,6 @@
     <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
     <script>
         let rawData = [];
-        let processedData = [];
         let chart;
 
         async function fetchData() {
@@ -72,19 +71,16 @@
                 const jsonData = await response.json();
                 rawData = jsonData.flatMap(item => item.records.records);
                 populateFilters();
-                aggregateData();
+                applyFilters();
             } catch (error) {
                 console.error("Error loading JSON:", error);
             }
         }
 
-        function aggregateData(selectedDomains = []) {
+        function aggregateData(data, useDomain) {
             const groupedData = {};
-            rawData.forEach(item => {
-                const useDomain = selectedDomains.length > 0;
+            data.forEach(item => {
                 const domainKey = useDomain ? item.domain : 'All';
-                if (useDomain && !selectedDomains.includes(item.domain)) return;
-
                 const key = `${item.entity}-${domainKey}`;
                 if (!groupedData[key]) {
                     groupedData[key] = { entity: item.entity, domain: domainKey, count: 0, total_entity_score: 0, total_title_score: 0, total_article_score: 0 };
@@ -95,23 +91,20 @@
                 groupedData[key].total_article_score += item.overall_score;
             });
 
-            processedData = Object.values(groupedData).map(item => ({
+            return Object.values(groupedData).map(item => ({
                 entity: item.entity,
                 domain: item.domain,
                 avg_entity_score: (item.total_entity_score / item.count).toFixed(2),
                 avg_title_score: (item.total_title_score / item.count).toFixed(2),
                 avg_article_score: (item.total_article_score / item.count).toFixed(2)
             }));
-
-            populateTable(processedData);
-            updateGraph(processedData);
         }
 
         function populateFilters() {
-            const entitySet = new Set(rawData.map(item => item.entity));
-            const domainSet = new Set(rawData.map(item => item.domain));
-            $("#entityFilter").html([...entitySet].map(e => `<option value="${e}">${e}</option>`));
-            $("#domainFilter").html([...domainSet].map(d => `<option value="${d}">${d}</option>`));
+            const entities = [...new Set(rawData.map(i => i.entity))];
+            const domains = [...new Set(rawData.map(i => i.domain))];
+            $("#entityFilter").html(entities.map(e => `<option>${e}</option>`));
+            $("#domainFilter").html(domains.map(d => `<option>${d}</option>`));
             $('.selectpicker').selectpicker('refresh');
         }
 
@@ -119,14 +112,38 @@
             const selectedEntities = $('#entityFilter').val() || [];
             const selectedDomains = $('#domainFilter').val() || [];
 
-            aggregateData(selectedDomains);
+            let filteredData = rawData;
+            if (selectedEntities.length) filteredData = filteredData.filter(i => selectedEntities.includes(i.entity));
+            if (selectedDomains.length) filteredData = filteredData.filter(i => selectedDomains.includes(i.domain));
 
-            const filteredData = processedData.filter(item => selectedEntities.length === 0 || selectedEntities.includes(item.entity));
-            populateTable(filteredData);
-            updateGraph(filteredData);
+            const aggregatedData = aggregateData(filteredData, selectedDomains.length > 0);
+
+            populateTable(aggregatedData);
+            updateGraph(aggregatedData);
 
             $('#entityFilter').selectpicker('val', selectedEntities);
             $('#domainFilter').selectpicker('val', selectedDomains);
+        }
+
+        function populateTable(data) {
+            let table = $('#dataTable').DataTable();
+            table.clear().rows.add(data.map(r => [r.entity, r.domain, r.avg_entity_score, r.avg_title_score, r.avg_article_score])).draw();
+        }
+
+        function updateGraph(data) {
+            if (chart) chart.destroy();
+            chart = new Chart($('#myChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.map(i => `${i.entity} (${i.domain})`),
+                    datasets: [
+                        { label: 'Avg Entity Score', data: data.map(i => i.avg_entity_score), backgroundColor: 'blue' },
+                        { label: 'Avg Title Score', data: data.map(i => i.avg_title_score), backgroundColor: 'red' },
+                        { label: 'Avg Article Score', data: data.map(i => i.avg_article_score), backgroundColor: 'green' }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
         }
 
         $(document).ready(fetchData);
