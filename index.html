@@ -71,6 +71,7 @@
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 const jsonData = await response.json();
                 rawData = jsonData.flatMap(item => item.records.records);
+                populateFilters();
                 aggregateData();
             } catch (error) {
                 console.error("Error loading JSON:", error);
@@ -106,6 +107,14 @@
             updateGraph(processedData);
         }
 
+        function populateFilters() {
+            const entitySet = new Set(rawData.map(item => item.entity));
+            const domainSet = new Set(rawData.map(item => item.domain));
+            $("#entityFilter").html([...entitySet].map(e => `<option value="${e}">${e}</option>`));
+            $("#domainFilter").html([...domainSet].map(d => `<option value="${d}">${d}</option>`));
+            $('.selectpicker').selectpicker('refresh');
+        }
+
         function applyFilters() {
             const selectedEntities = $('#entityFilter').val() || [];
             const selectedDomains = $('#domainFilter').val() || [];
@@ -115,32 +124,12 @@
             const filteredData = processedData.filter(item => selectedEntities.length === 0 || selectedEntities.includes(item.entity));
             populateTable(filteredData);
             updateGraph(filteredData);
+
+            $('#entityFilter').selectpicker('val', selectedEntities);
+            $('#domainFilter').selectpicker('val', selectedDomains);
         }
 
-        function populateTable(data) {
-            let table = $('#dataTable').DataTable();
-            table.clear().rows.add(data.map(row => [row.entity, row.domain, row.avg_entity_score, row.avg_title_score, row.avg_article_score])).draw();
-        }
-
-        function updateGraph(data) {
-            if (chart) chart.destroy();
-            chart = new Chart(document.getElementById('myChart'), {
-                type: 'bar',
-                data: {
-                    labels: data.map(item => `${item.entity} (${item.domain})`),
-                    datasets: [
-                        { label: 'Avg Entity Score', data: data.map(i => i.avg_entity_score), backgroundColor: 'blue' },
-                        { label: 'Avg Title Score', data: data.map(i => i.avg_title_score), backgroundColor: 'red' },
-                        { label: 'Avg Article Score', data: data.map(i => i.avg_article_score), backgroundColor: 'green' }
-                    ]
-                },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
-            });
-        }
-
-        $(document).ready(() => {
-            fetchData().then(() => $('.selectpicker').selectpicker('refresh'));
-        });
+        $(document).ready(fetchData);
     </script>
 </body>
 </html>
