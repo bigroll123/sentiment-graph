@@ -79,11 +79,7 @@
             if (selectedDomains.length) filteredData = filteredData.filter(i => selectedDomains.includes(i.domain));
 
             populateTable(filteredData);
-            if(filteredData.length > 0){
-                updateTimeSeriesGraph(filteredData);
-            } else if(chart) {
-                chart.destroy();
-            }
+            updateTimeSeriesGraph(filteredData, selectedDomains.length > 0);
 
             $('#entityFilter').selectpicker('val', selectedEntities);
             $('#domainFilter').selectpicker('val', selectedDomains);
@@ -99,10 +95,12 @@
 
             const datasets = ['entity_score', 'title_score', 'overall_score'].map(scoreType => ({
                 label: scoreType.replace('_', ' ').toUpperCase(),
-                data: data.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at)).map(d => ({ x: new Date(d.created_at), y: d[scoreType] })),
-                showLine: true,
-                tension: 0.2,
-                pointRadius: 3
+                data: data
+                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                    .map(d => ({ x: new Date(d.created_at), y: d[scoreType] })),
+                borderWidth: 1,
+                pointRadius: 2,
+                showLine: true
             }));
 
             chart = new Chart(document.getElementById('myChart'), {
