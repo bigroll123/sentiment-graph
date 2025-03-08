@@ -87,9 +87,9 @@
             rawData.forEach(item => {
                 const key = item.domain ? `${item.entity}-${item.domain}` : item.entity;
                 if (!groupedData[key]) {
-                    groupedData[key] = { 
-                        entity: item.entity, 
-                        domain: item.domain || "All", 
+                    groupedData[key] = {
+                        entity: item.entity,
+                        domain: item.domain || "All",
                         count: 0,
                         total_entity_score: 0,
                         total_title_score: 0,
@@ -113,6 +113,20 @@
             populateFilters();
             populateTable(processedData);
             updateGraph(processedData);
+        }
+
+        function applyFilters() {
+            const selectedEntities = $('#entityFilter').val() || [];
+            const selectedDomains = $('#domainFilter').val() || [];
+            
+            let filteredData = processedData.filter(item => 
+                (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
+                (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
+            );
+            
+            console.log("Filtered Data:", filteredData);
+            populateTable(filteredData);
+            updateGraph(filteredData);
         }
 
         function populateTable(data) {
