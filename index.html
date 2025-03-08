@@ -75,7 +75,6 @@
                 const jsonData = await response.json();
                 console.log("Fetched Data:", jsonData);
 
-                // Extract records
                 rawData = jsonData.flatMap(item => item.records.records);
                 aggregateData();
             } catch (error) {
@@ -84,33 +83,36 @@
         }
 
         function aggregateData() {
-            processedData = rawData.map(item => ({
+            const groupedData = {};
+            rawData.forEach(item => {
+                const key = item.domain ? `${item.entity}-${item.domain}` : item.entity;
+                if (!groupedData[key]) {
+                    groupedData[key] = { 
+                        entity: item.entity, 
+                        domain: item.domain || "All", 
+                        count: 0,
+                        total_entity_score: 0,
+                        total_title_score: 0,
+                        total_article_score: 0
+                    };
+                }
+                groupedData[key].count++;
+                groupedData[key].total_entity_score += item.entity_score;
+                groupedData[key].total_title_score += item.title_score;
+                groupedData[key].total_article_score += item.overall_score;
+            });
+
+            processedData = Object.values(groupedData).map(item => ({
                 entity: item.entity,
                 domain: item.domain,
-                avg_entity_score: item.entity_score,
-                avg_title_score: item.title_score,
-                avg_article_score: item.overall_score
+                avg_entity_score: (item.total_entity_score / item.count).toFixed(2),
+                avg_title_score: (item.total_title_score / item.count).toFixed(2),
+                avg_article_score: (item.total_article_score / item.count).toFixed(2)
             }));
             
             populateFilters();
             populateTable(processedData);
             updateGraph(processedData);
-        }
-
-        function populateFilters() {
-            const entitySet = new Set();
-            const domainSet = new Set();
-            processedData.forEach(item => {
-                entitySet.add(item.entity);
-                domainSet.add(item.domain);
-            });
-            const entitySelect = $("#entityFilter");
-            entitySelect.empty();
-            entitySet.forEach(entity => entitySelect.append(`<option value="${entity}">${entity}</option>`));
-            const domainSelect = $("#domainFilter");
-            domainSelect.empty();
-            domainSet.forEach(domain => domainSelect.append(`<option value="${domain}">${domain}</option>`));
-            $('.selectpicker').selectpicker('refresh');
         }
 
         function populateTable(data) {
@@ -120,42 +122,6 @@
                 table.row.add([row.entity, row.domain, row.avg_entity_score, row.avg_title_score, row.avg_article_score]);
             });
             table.draw();
-        }
-
-        function applyFilters() {
-            const selectedEntities = $('#entityFilter').val() || [];
-            const selectedDomains = $('#domainFilter').val() || [];
-            
-            let filteredData = processedData.filter(item => 
-                (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
-                (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
-            );
-            
-            console.log("Filtered Data:", filteredData);
-            populateTable(filteredData);
-            updateGraph(filteredData);
-        }
-
-        function updateGraph(data) {
-            const labels = data.map(item => `${item.entity} (${item.domain})`);
-            const entityScores = data.map(item => item.avg_entity_score);
-            const titleScores = data.map(item => item.avg_title_score);
-            const articleScores = data.map(item => item.avg_article_score);
-            
-            const ctx = document.getElementById('myChart').getContext('2d');
-            if (chart) chart.destroy();
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Avg Entity Score', data: entityScores, backgroundColor: 'blue' },
-                        { label: 'Avg Title Score', data: titleScores, backgroundColor: 'red' },
-                        { label: 'Avg Article Score', data: articleScores, backgroundColor: 'green' }
-                    ]
-                },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
-            });
         }
 
         $(document).ready(fetchData);
