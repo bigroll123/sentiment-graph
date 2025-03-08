@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt/css/jquery.dataTables.min.css">
     <style>
         body { padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 1000px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-        canvas { margin-top: 20px; }
+        .container { max-width: 1200px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        canvas { margin-top: 20px; height: 400px !important; }
     </style>
 </head>
 <body>
@@ -74,12 +74,17 @@
             const selectedEntities = $('#entityFilter').val() || [];
             const selectedDomains = $('#domainFilter').val() || [];
 
-            let filteredData = rawData;
-            if (selectedEntities.length) filteredData = filteredData.filter(i => selectedEntities.includes(i.entity));
+            if (!selectedEntities.length) {
+                if (chart) chart.destroy();
+                $('#dataTable').DataTable().clear().draw();
+                return;
+            }
+
+            let filteredData = rawData.filter(i => selectedEntities.includes(i.entity));
             if (selectedDomains.length) filteredData = filteredData.filter(i => selectedDomains.includes(i.domain));
 
             populateTable(filteredData);
-            updateTimeSeriesGraph(filteredData, selectedDomains.length > 0);
+            updateTimeSeriesGraph(filteredData, selectedDomains);
 
             $('#entityFilter').selectpicker('val', selectedEntities);
             $('#domainFilter').selectpicker('val', selectedDomains);
@@ -93,26 +98,38 @@
         function updateTimeSeriesGraph(data) {
             if (chart) chart.destroy();
 
-            const datasets = ['entity_score', 'title_score', 'overall_score'].map(scoreType => ({
-                label: scoreType.replace('_', ' ').toUpperCase(),
-                data: data
-                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-                    .map(d => ({ x: new Date(d.created_at), y: d[scoreType] })),
-                borderWidth: 1,
-                pointRadius: 2,
-                showLine: true
-            }));
+            const grouped = {};
+            data.forEach(d => {
+                const date = new Date(d.created_at).toLocaleDateString();
+                const key = `${d.entity}-${d.domain || 'All'}`;
+                if (!groupedData[key]) groupedData[key] = {};
+                if (!groupedData[key][date]) groupedData[key][date] = { count: 0, entity_score: 0, title_score: 0, overall_score: 0 };
+                groupedData[key][date].count++;
+                groupedData[key][date].entity_score += d.entity_score;
+                groupedData[key][date].title_score += d.title_score;
+                groupedData[key][date].overall_score += d.overall_score;
+            });
 
+            const datasets = [];
+            Object.keys(groupedData).forEach(key => {
+                ['entity_score', 'title_score', 'overall_score'].forEach(scoreType => {
+                    datasets.push({
+                        label: `${key} ${scoreType.replace('_', ' ')}`,
+                        data: Object.entries(groupedData[key]).map(([date, values]) => ({ x: new Date(date), y: (values[scoreType] / values.count).toFixed(2) })),
+                        borderWidth: 1,
+                        pointRadius: 3,
+                        showLine: true
+                    });
+                });
+            });
+
+            if (chart) chart.destroy();
             chart = new Chart(document.getElementById('myChart'), {
                 type: 'line',
                 data: { datasets },
                 options: {
-                    scales: {
-                        x: { type: 'time', time: { unit: 'day', tooltipFormat: 'PP' } },
-                        y: { min: -10, max: 10 }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false
+                    scales: { x: { type: 'time', time: { unit: 'day' } }, y: { min: -10, max: 10 } },
+                    responsive: true, maintainAspectRatio: false
                 }
             });
         }
