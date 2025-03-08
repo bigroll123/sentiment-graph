@@ -1,24 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Позитивни & Негативни герои според медиите</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-
-    <!-- Bootstrap 5 (CSS) -->
+    <title>Позитивни & Негативни герои според медиите</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt/css/jquery.dataTables.min.css">
-
     <style>
         body {
             padding: 20px;
             background-color: #f8f9fa;
         }
-
         .container {
             max-width: 1000px;
             background: white;
@@ -26,203 +20,145 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
         canvas {
             margin-top: 20px;
         }
     </style>
 </head>
-
 <body>
-
     <div class="container">
         <h2 class="text-center mb-4">Позитивни & Негативни описани в медиите</h2>
-
-        <!-- Filters Row -->
         <div class="row mb-3">
             <div class="col-md-5">
                 <label for="entityFilter" class="form-label">Select Entities:</label>
-                <select id="entityFilter" class="selectpicker form-control" multiple data-live-search="true"
-                    data-actions-box="true"></select>
+                <select id="entityFilter" class="selectpicker form-control" multiple data-live-search="true" data-actions-box="true"></select>
             </div>
             <div class="col-md-5">
                 <label for="domainFilter" class="form-label">Select Domains:</label>
-                <select id="domainFilter" class="selectpicker form-control" multiple data-live-search="true"
-                    data-actions-box="true">
-                    <option value="all">All Domains</option>
-                </select>
+                <select id="domainFilter" class="selectpicker form-control" multiple data-live-search="true" data-actions-box="true"></select>
             </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-primary w-100" onclick="fetchSelectedData()">Apply</button>
+                <button class="btn btn-primary w-100" onclick="applyFilters()">Apply</button>
             </div>
         </div>
-
-        <!-- Table -->
         <table id="dataTable" class="table table-striped">
             <thead class="table-dark">
                 <tr>
                     <th>Entity</th>
                     <th>Domain</th>
                     <th>Avg Entity Score</th>
-                    <th>Avg Overall Score</th>
                     <th>Avg Title Score</th>
+                    <th>Avg Article Score</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-
-        <!-- Chart -->
         <canvas id="myChart"></canvas>
     </div>
-
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
-
     <script>
-        const CLOUDFLARE_WORKER_URL = "https://senti-wrk.kj-kalin.workers.dev";
         let rawData = [];
+        let processedData = [];
         let chart;
 
-        async function fetchAvailableDomains() {
+        async function fetchData() {
             try {
-                console.log("Fetching available domains...");
-                const response = await fetch(`${CLOUDFLARE_WORKER_URL}/domains`);
-                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                console.log("Fetching data from Cloudflare KV...");
+                const response = await fetch('https://senti-wrk.kj-kalin.workers.dev/retrieve-all');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const jsonData = await response.json();
+                console.log("Fetched Data:", jsonData);
 
-                const domains = await response.json();
-                console.log("Domains fetched:", domains);
-
-                populateDomainDropdown(domains);
-                fetchAllData();
+                // Extract records
+                rawData = jsonData.flatMap(item => item.records.records);
+                aggregateData();
             } catch (error) {
-                console.error("Error fetching domains:", error);
+                console.error("Error loading JSON:", error);
             }
         }
 
-        function populateDomainDropdown(domains) {
+        function aggregateData() {
+            processedData = rawData.map(item => ({
+                entity: item.entity,
+                domain: item.domain,
+                avg_entity_score: item.entity_score,
+                avg_title_score: item.title_score,
+                avg_article_score: item.overall_score
+            }));
+            
+            populateFilters();
+            populateTable(processedData);
+            updateGraph(processedData);
+        }
+
+        function populateFilters() {
+            const entitySet = new Set();
+            const domainSet = new Set();
+            processedData.forEach(item => {
+                entitySet.add(item.entity);
+                domainSet.add(item.domain);
+            });
+            const entitySelect = $("#entityFilter");
+            entitySelect.empty();
+            entitySet.forEach(entity => entitySelect.append(`<option value="${entity}">${entity}</option>`));
             const domainSelect = $("#domainFilter");
             domainSelect.empty();
-            domainSelect.append(`<option value="all">All Domains</option>`);
-
-            domains.forEach(domain => {
-                domainSelect.append(`<option value="${domain}">${domain}</option>`);
-            });
-
+            domainSet.forEach(domain => domainSelect.append(`<option value="${domain}">${domain}</option>`));
             $('.selectpicker').selectpicker('refresh');
-        }
-
-        async function fetchAllData() {
-            try {
-                console.log("Fetching all data...");
-                const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve-all`);
-                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-
-                rawData = await response.json();
-                console.log("Loaded Data:", rawData);
-
-                updateDataDisplay();
-            } catch (error) {
-                console.error("Error fetching all data:", error);
-            }
-        }
-
-        async function fetchSelectedData() {
-            const selectedDomains = $("#domainFilter").val();
-            console.log("Fetching data for:", selectedDomains);
-
-            if (!selectedDomains || selectedDomains.length === 0) {
-                console.warn("No domains selected.");
-                return;
-            }
-
-            let domainData = [];
-
-            for (const domain of selectedDomains) {
-                try {
-                    const response = await fetch(`${CLOUDFLARE_WORKER_URL}/retrieve?domain=${domain}`);
-                    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-
-                    const data = await response.json();
-                    console.log(`Data for ${domain}:`, data);
-
-                    domainData.push({ domain, records: Array.isArray(data) ? data : [] });
-
-                } catch (error) {
-                    console.error(`Error fetching data for ${domain}:`, error);
-                }
-            }
-
-            rawData = domainData;
-            updateDataDisplay();
-        }
-
-        function updateDataDisplay() {
-            console.log("Updating UI with data...");
-
-            if (!rawData || rawData.length === 0) {
-                console.warn("No data available to update.");
-                return;
-            }
-
-            let aggregatedData = aggregateData(rawData);
-            console.log("Aggregated Data for Table:", aggregatedData);
-
-            populateFilters();
-            populateTable(aggregatedData);
-            updateGraph();
-        }
-
-        function aggregateData(data) {
-            let entityMap = {};
-
-            data.forEach(d => {
-                d.records.forEach(r => {
-                    let key = `${r.entity}_${d.domain}`;
-                    if (!entityMap[key]) {
-                        entityMap[key] = { 
-                            entity: r.entity,
-                            domain: d.domain,
-                            entity_score: [],
-                            overall_score: [],
-                            title_score: []
-                        };
-                    }
-                    entityMap[key].entity_score.push(r.entity_score);
-                    entityMap[key].overall_score.push(r.overall_score);
-                    entityMap[key].title_score.push(r.title_score);
-                });
-            });
-
-            return Object.values(entityMap).map(e => ({
-                entity: e.entity,
-                domain: e.domain,
-                avg_entity_score: average(e.entity_score),
-                avg_overall_score: average(e.overall_score),
-                avg_title_score: average(e.title_score)
-            }));
-        }
-
-        function average(arr) {
-            return arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : "N/A";
         }
 
         function populateTable(data) {
             let table = $('#dataTable').DataTable();
             table.clear();
-            table.rows.add(data);
+            data.forEach(row => {
+                table.row.add([row.entity, row.domain, row.avg_entity_score, row.avg_title_score, row.avg_article_score]);
+            });
             table.draw();
         }
 
-        $(document).ready(function () {
-            fetchAvailableDomains();
-        });
+        function applyFilters() {
+            const selectedEntities = $('#entityFilter').val() || [];
+            const selectedDomains = $('#domainFilter').val() || [];
+            
+            let filteredData = processedData.filter(item => 
+                (selectedEntities.length === 0 || selectedEntities.includes(item.entity)) &&
+                (selectedDomains.length === 0 || selectedDomains.includes(item.domain))
+            );
+            
+            console.log("Filtered Data:", filteredData);
+            populateTable(filteredData);
+            updateGraph(filteredData);
+        }
 
+        function updateGraph(data) {
+            const labels = data.map(item => `${item.entity} (${item.domain})`);
+            const entityScores = data.map(item => item.avg_entity_score);
+            const titleScores = data.map(item => item.avg_title_score);
+            const articleScores = data.map(item => item.avg_article_score);
+            
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Avg Entity Score', data: entityScores, backgroundColor: 'blue' },
+                        { label: 'Avg Title Score', data: titleScores, backgroundColor: 'red' },
+                        { label: 'Avg Article Score', data: articleScores, backgroundColor: 'green' }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        $(document).ready(fetchData);
     </script>
-
 </body>
 </html>
