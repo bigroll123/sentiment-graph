@@ -115,6 +115,22 @@
             updateGraph(processedData);
         }
 
+        function populateFilters() {
+            const entitySet = new Set();
+            const domainSet = new Set();
+            processedData.forEach(item => {
+                entitySet.add(item.entity);
+                domainSet.add(item.domain);
+            });
+            const entitySelect = $("#entityFilter");
+            entitySelect.empty();
+            entitySet.forEach(entity => entitySelect.append(`<option value="${entity}">${entity}</option>`));
+            const domainSelect = $("#domainFilter");
+            domainSelect.empty();
+            domainSet.forEach(domain => domainSelect.append(`<option value="${domain}">${domain}</option>`));
+            $('.selectpicker').selectpicker('refresh');
+        }
+
         function applyFilters() {
             const selectedEntities = $('#entityFilter').val() || [];
             const selectedDomains = $('#domainFilter').val() || [];
