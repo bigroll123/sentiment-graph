@@ -102,17 +102,8 @@
                 avg_article_score: (item.total_article_score / item.count).toFixed(2)
             }));
 
-            populateFilters();
             populateTable(processedData);
             updateGraph(processedData);
-        }
-
-        function populateFilters() {
-            const entitySet = new Set(rawData.map(item => item.entity));
-            const domainSet = new Set(rawData.map(item => item.domain));
-            $("#entityFilter").empty().append([...entitySet].map(e => `<option>${e}</option>`));
-            $("#domainFilter").empty().append([...domainSet].map(d => `<option>${d}</option>`));
-            $('.selectpicker').selectpicker('refresh');
         }
 
         function applyFilters() {
@@ -147,7 +138,9 @@
             });
         }
 
-        $(document).ready(fetchData);
+        $(document).ready(() => {
+            fetchData().then(() => $('.selectpicker').selectpicker('refresh'));
+        });
     </script>
 </body>
 </html>
