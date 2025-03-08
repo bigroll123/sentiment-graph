@@ -60,7 +60,6 @@
             const response = await fetch('https://senti-wrk.kj-kalin.workers.dev/retrieve-all');
             rawData = (await response.json()).flatMap(item => item.records.records);
             populateFilters();
-            applyFilters();
         }
 
         function populateFilters() {
@@ -80,7 +79,11 @@
             if (selectedDomains.length) filteredData = filteredData.filter(i => selectedDomains.includes(i.domain));
 
             populateTable(filteredData);
-            updateTimeSeriesGraph(filteredData);
+            if(filteredData.length > 0){
+                updateTimeSeriesGraph(filteredData);
+            } else if(chart) {
+                chart.destroy();
+            }
 
             $('#entityFilter').selectpicker('val', selectedEntities);
             $('#domainFilter').selectpicker('val', selectedDomains);
@@ -94,23 +97,21 @@
         function updateTimeSeriesGraph(data) {
             if (chart) chart.destroy();
 
-            const datasets = [];
-            ['entity_score', 'title_score', 'overall_score'].forEach(scoreType => {
-                datasets.push({
-                    label: scoreType.replace('_', ' ').toUpperCase(),
-                    data: data.map(d => ({ x: new Date(d.created_at), y: d[scoreType] })),
-                    showLine: false,
-                    pointRadius: 3,
-                });
-            });
+            const datasets = ['entity_score', 'title_score', 'overall_score'].map(scoreType => ({
+                label: scoreType.replace('_', ' ').toUpperCase(),
+                data: data.sort((a,b)=> new Date(a.created_at)-new Date(b.created_at)).map(d => ({ x: new Date(d.created_at), y: d[scoreType] })),
+                showLine: true,
+                tension: 0.2,
+                pointRadius: 3
+            }));
 
             chart = new Chart(document.getElementById('myChart'), {
-                type: 'scatter',
+                type: 'line',
                 data: { datasets },
                 options: {
                     scales: {
                         x: { type: 'time', time: { unit: 'day', tooltipFormat: 'PP' } },
-                        y: { beginAtZero: false }
+                        y: { min: -10, max: 10 }
                     },
                     responsive: true,
                     maintainAspectRatio: false
