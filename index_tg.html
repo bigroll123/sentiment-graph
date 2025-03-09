@@ -1,139 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <title>Optimized Time Series Sentiment Scores</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt/css/jquery.dataTables.min.css">
-    <style>
-        body { padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 1200px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-        canvas { margin-top: 20px; }
-        #legendTable { margin-top: 20px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>Optimized Time Series Sentiment Scores</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt/css/jquery.dataTables.min.css">
+  <style>
+    body {
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+
+    .container {
+      max-width: 1200px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    canvas {
+      margin-top: 20px;
+    }
+
+    #legendTable {
+      margin-top: 20px;
+    }
+  </style>
 </head>
+
 <body>
-    <div class="container">
-        <h2 class="text-center mb-4">Optimized Time Series Sentiment Scores</h2>
-        <div class="row mb-3">
-            <div class="col-md-5">
-                <label for="entityFilter" class="form-label">Select Entities:</label>
-                <select id="entityFilter" class="selectpicker form-control" multiple data-live-search="true" data-actions-box="true"></select>
-            </div>
-            <div class="col-md-5">
-                <label for="domainFilter" class="form-label">Select Domains:</label>
-                <select id="domainFilter" class="selectpicker form-control" multiple data-live-search="true" data-actions-box="true"></select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-primary w-100" onclick="applyFilters()">Apply</button>
-            </div>
-        </div>
-        <canvas id="myChart"></canvas>
-        <table id="legendTable" class="table table-bordered">
-            <thead class="table-dark">
-                <tr>
-                    <th>Entity</th>
-                    <th>Avg Entity Score</th>
-                    <th>Avg Title Score</th>
-                    <th>Avg Article Score</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+  <div class="container">
+    <h2 class="text-center mb-4">Optimized Time Series Sentiment Scores</h2>
+    <div class="row mb-3">
+      <div class="col-md-5">
+        <label for="entityFilter" class="form-label">Select Entities:</label>
+        <select id="entityFilter" class="selectpicker form-control" multiple data-live-search="true"
+          data-actions-box="true"></select>
+      </div>
+      <div class="col-md-5">
+        <label for="domainFilter" class="form-label">Select Domains:</label>
+        <select id="domainFilter" class="selectpicker form-control" multiple data-live-search="true"
+          data-actions-box="true"></select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary w-100" onclick="applyFilters()">Apply</button>
+      </div>
     </div>
+    <canvas id="myChart"></canvas>
+    <table id="legendTable" class="table table-bordered">
+      <thead class="table-dark">
+        <tr>
+          <th>Entity</th>
+          <th>Avg Entity Score</th>
+          <th>Avg Title Score</th>
+          <th>Avg Article Score</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
-    <script>
-        let rawData = [];
-        let chart;
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
+  <script>
+    let rawData = [];
+    let chart;
 
-        async function fetchData() {
-            const response = await fetch('https://senti-wrk.kj-kalin.workers.dev/retrieve-all');
-            rawData = (await response.json()).flatMap(item => item.records.records);
-            populateFilters();
-        }
+    async function fetchData() {
+      const response = await fetch('https://senti-wrk.kj-kalin.workers.dev/retrieve-all');
+      rawData = (await response.json()).flatMap(item => item.records.records);
+      populateFilters();
+    }
 
-        function populateFilters() {
-            const entities = [...new Set(rawData.map(i => i.entity))];
-            const domains = [...new Set(rawData.map(i => i.domain))];
-            $("#entityFilter").html(entities.map(e => `<option>${e}</option>`));
-            $("#domainFilter").html(domains.map(d => `<option>${d}</option>`));
-            $('.selectpicker').selectpicker('refresh');
-        }
+    function populateFilters() {
+      const entities = [...new Set(rawData.map(i => i.entity))];
+      const domains = [...new Set(rawData.map(i => i.domain))];
+      $("#entityFilter").html(entities.map(e => `<option>${e}</option>`));
+      $("#domainFilter").html(domains.map(d => `<option>${d}</option>`));
+      $('.selectpicker').selectpicker('refresh');
+    }
 
-        function applyFilters() {
-            const selectedEntities = $('#entityFilter').val() || [];
-            const selectedDomains = $('#domainFilter').val() || [];
+    function applyFilters() {
+      const selectedEntities = $('#entityFilter').val() || [];
+      const selectedDomains = $('#domainFilter').val() || [];
 
-            let filteredData = rawData.filter(i => selectedEntities.includes(i.entity));
-            if (selectedDomains.length) filteredData = filteredData.filter(i => selectedDomains.includes(i.domain));
+      let filteredData = rawData.filter(i => selectedEntities.includes(i.entity));
+      if (selectedDomains.length) filteredData = filteredData.filter(i => selectedDomains.includes(i.domain));
 
-            updateTimeSeriesGraph(filteredData);
-            populateLegendTable(filteredData);
+      updateTimeSeriesGraph(filteredData);
+      populateLegendTable(filteredData);
 
-            $('#entityFilter').selectpicker('val', selectedEntities);
-            $('#domainFilter').selectpicker('val', selectedDomains);
-        }
+      $('#entityFilter').selectpicker('val', selectedEntities);
+      $('#domainFilter').selectpicker('val', selectedDomains);
+    }
 
-        function populateLegendTable(data) {
-            const entityTotals = {};
-            data.forEach(d => {
-                if (!entityTotals[d.entity]) entityTotals[d.entity] = { count: 0, entity_score: 0, title_score: 0, overall_score: 0 };
-                entityTotals[d.entity].count++;
-                entityTotals[d.entity].entity_score += d.entity_score;
-                entityTotals[d.entity].title_score += d.title_score;
-                entityTotals[d.entity].overall_score += d.overall_score;
-            });
-            const table = $('#legendTable').DataTable();
-            table.clear();
-            Object.entries(entityTotals).forEach(([entity, scores]) => {
-                table.row.add([
-                    entity,
-                    (scores.entity_score / scores.count).toFixed(2),
-                    (scores.title_score / scores.count).toFixed(2),
-                    (scores.overall_score / scores.count).toFixed(2)
-                ]);
-            });
-            table.draw();
-        }
+    function populateLegendTable(data) {
+      const entityTotals = {};
+      data.forEach(d => {
+        if (!entityTotals[d.entity]) entityTotals[d.entity] = { count: 0, entity_score: 0, title_score: 0, overall_score: 0 };
+        entityTotals[d.entity].count++;
+        entityTotals[d.entity].entity_score += d.entity_score;
+        entityTotals[d.entity].title_score += d.title_score;
+        entityTotals[d.entity].overall_score += d.overall_score;
+      });
+      const table = $('#legendTable').DataTable();
+      table.clear();
+      Object.entries(entityTotals).forEach(([entity, scores]) => {
+        table.row.add([
+          entity,
+          (scores.entity_score / scores.count).toFixed(2),
+          (scores.title_score / scores.count).toFixed(2),
+          (scores.overall_score / scores.count).toFixed(2)
+        ]);
+      });
+      table.draw();
+    }
 
-        function updateTimeSeriesGraph(data) {
-            if (chart) chart.destroy();
 
-            const aggregatedData = {};
-            data.forEach(d => {
-                const date = new Date(d.created_at).toISOString().split('T')[0];
-                const key = `${d.entity}-${d.domain}`;
-                if (!aggregatedData[key]) aggregatedData[key] = {};
-                if (!aggregatedData[key][date]) aggregatedData[key][date] = { count: 0, entity_score: 0, title_score: 0, overall_score: 0 };
-                aggregatedData[key][date].count++;
-                aggregatedData[key][date].entity_score += d.entity_score;
-                aggregatedData[key][date].title_score += d.title_score;
-                aggregatedData[key][date].overall_score += d.overall_score;
-            });
+    function updateTimeSeriesGraph(data) {
+      if (chart) chart.destroy();
 
-            const datasets = Object.entries(aggregatedData).flatMap(([key, dates]) =>
-                ['entity_score', 'title_score', 'overall_score'].map(scoreType => ({
-                    label: `${key} ${scoreType.replace('_', ' ')}`,
-                    data: Object.entries(dates).map(([date, scores]) => ({ x: new Date(date), y: (scores[scoreType] / scores.count).toFixed(2) })),
-                    borderWidth: 1, pointRadius: 2, showLine: true
-                })));
+      const aggregatedData = {};
+      data.forEach(d => {
+        const date = new Date(d.created_at).toISOString().split('T')[0];
+        const key = `${d.entity}-${d.domain}`;
+        if (!aggregatedData[key]) aggregatedData[key] = {};
+        if (!aggregatedData[key][date]) aggregatedData[key][date] = { count: 0, entity_score: 0, title_score: 0, overall_score: 0 };
+        aggregatedData[key][date].count++;
+        aggregatedData[key][date].entity_score += d.entity_score;
+        aggregatedData[key][date].title_score += d.title_score;
+        aggregatedData[key][date].overall_score += d.overall_score;
+      });
 
-            chart = new Chart(document.getElementById('myChart'), {
-                type: 'line', data: { datasets },
-                options: { responsive: true, maintainAspectRatio: true, scales: { x: { type: 'time', unit: 'day' }, y: { min: -10, max: 10 } } }
-            });
-        }
+      const datasets = Object.entries(aggregatedData).flatMap(([key, dates]) =>
+        ['entity_score', 'title_score', 'overall_score'].map(scoreType => ({
+          label: `${key} ${scoreType.replace('_', ' ')}`,
+          data: Object.entries(dates).map(([date, scores]) => ({ x: new Date(date), y: (scores[scoreType] / scores.count).toFixed(2) })),
+          borderWidth: 1, pointRadius: 2, showLine: true
+        })));
 
-        $(document).ready(fetchData);
-    </script>
+      chart = new Chart(document.getElementById('myChart'), {
+        type: 'line', data: { datasets },
+        options: { responsive: true, maintainAspectRatio: true, scales: { x: { type: 'time', unit: 'day' }, y: { min: -10, max: 10 } } }
+      });
+    }
+
+    $(document).ready(fetchData);
+  </script>
 </body>
+
 </html>
