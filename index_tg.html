@@ -12,6 +12,7 @@
         body { padding: 20px; background-color: #f8f9fa; }
         .container { max-width: 1200px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
         canvas { margin-top: 20px; height: 400px !important; }
+        #legendTable { margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -44,6 +45,18 @@
             <tbody></tbody>
         </table>
         <canvas id="myChart"></canvas>
+        <table id="legendTable" class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Entity-Domain</th>
+                    <th>Date</th>
+                    <th>Avg Entity Score</th>
+                    <th>Avg Title Score</th>
+                    <th>Avg Article Score</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -76,7 +89,7 @@
 
             if (!selectedEntities.length) {
                 if (chart) chart.destroy();
-                $('#dataTable').DataTable().clear().draw();
+                $('#dataTable, #legendTable').DataTable().clear().draw();
                 return;
             }
 
@@ -84,7 +97,8 @@
             if (selectedDomains.length) filteredData = filteredData.filter(i => selectedDomains.includes(i.domain));
 
             populateTable(filteredData);
-            updateTimeSeriesGraph(filteredData, selectedDomains);
+            updateTimeSeriesGraph(filteredData);
+            populateLegendTable(filteredData);
 
             $('#entityFilter').selectpicker('val', selectedEntities);
             $('#domainFilter').selectpicker('val', selectedDomains);
@@ -95,9 +109,7 @@
             table.clear().rows.add(data.map(r => [new Date(r.created_at).toLocaleDateString(), r.entity, r.domain, r.entity_score, r.title_score, r.overall_score])).draw();
         }
 
-        function updateTimeSeriesGraph(data) {
-            if (chart) chart.destroy();
-
+        function populateLegendTable(data) {
             const groupedData = {};
             data.forEach(d => {
                 const date = new Date(d.created_at).toLocaleDateString();
@@ -109,29 +121,14 @@
                 groupedData[key][date].title_score += d.title_score;
                 groupedData[key][date].overall_score += d.overall_score;
             });
-
-            const datasets = [];
-            Object.keys(groupedData).forEach(key => {
-                ['entity_score', 'title_score', 'overall_score'].forEach(scoreType => {
-                    datasets.push({
-                        label: `${key} ${scoreType.replace('_', ' ')}`,
-                        data: Object.entries(groupedData[key]).map(([date, values]) => ({ x: new Date(date), y: (values[scoreType] / values.count).toFixed(2) })),
-                        borderWidth: 1,
-                        pointRadius: 3,
-                        showLine: true
-                    });
+            const table = $('#legendTable').DataTable();
+            table.clear();
+            Object.entries(groupedData).forEach(([key, dates]) => {
+                Object.entries(dates).forEach(([date, scores]) => {
+                    table.row.add([key, date, (scores.entity_score/scores.count).toFixed(2), (scores.title_score/scores.count).toFixed(2), (scores.overall_score/scores.count).toFixed(2)]);
                 });
             });
-
-            if (chart) chart.destroy();
-            chart = new Chart(document.getElementById('myChart'), {
-                type: 'line',
-                data: { datasets },
-                options: {
-                    scales: { x: { type: 'time', time: { unit: 'day' } }, y: { min: -10, max: 10 } },
-                    responsive: true, maintainAspectRatio: false
-                }
-            });
+            table.draw();
         }
 
         $(document).ready(fetchData);
