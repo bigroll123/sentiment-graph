@@ -98,7 +98,7 @@
         function updateTimeSeriesGraph(data) {
             if (chart) chart.destroy();
 
-            const grouped = {};
+            const groupedData = {};
             data.forEach(d => {
                 const date = new Date(d.created_at).toLocaleDateString();
                 const key = `${d.entity}-${d.domain || 'All'}`;
