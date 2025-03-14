@@ -80,13 +80,13 @@
         function aggregateData(selectedDomains = []) {
             const groupedData = {};
             rawData.forEach(item => {
+                const domain = extractDomain(item.url); // Extract domain correctly
                 const useDomain = selectedDomains.length > 0;
-                const domainKey = useDomain ? item.domain : 'All';
-                if (useDomain && !selectedDomains.includes(item.domain)) return;
+                if (useDomain && !selectedDomains.includes(domain)) return;
 
-                const key = `${item.entity}-${domainKey}`;
+                const key = `${item.entity}-${domain}`;
                 if (!groupedData[key]) {
-                    groupedData[key] = { entity: item.entity, domain: domainKey, count: 0, total_entity_score: 0, total_title_score: 0, total_article_score: 0 };
+                    groupedData[key] = { entity: item.entity, domain: domain, count: 0, total_entity_score: 0, total_title_score: 0, total_article_score: 0 };
                 }
                 groupedData[key].count++;
                 groupedData[key].total_entity_score += item.entity_score;
@@ -107,11 +107,22 @@
             updateGraph(processedData);
         }
 
+        function extractDomain(url) {
+            try {
+                return new URL(`https://${url}`).hostname; // Ensure URL parsing works correctly
+            } catch (error) {
+                console.error("Invalid URL:", url);
+                return url;
+            }
+        }
+
         function populateFilters() {
             const entitySet = new Set(rawData.map(item => item.entity));
-            const domainSet = new Set(rawData.map(item => item.domain));
+            const domainSet = new Set(rawData.map(item => extractDomain(item.url)));
+
             $("#entityFilter").empty().append([...entitySet].map(e => `<option>${e}</option>`));
             $("#domainFilter").empty().append([...domainSet].map(d => `<option>${d}</option>`));
+
             $('.selectpicker').selectpicker('refresh');
         }
 
