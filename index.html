@@ -67,7 +67,7 @@
 
         async function fetchData() {
             try {
-                const response = await fetch('https://senti-wrk.kj-kalin.workers.dev/retrieve-all');
+                const response = await fetch('https://db.chibb.uk/retrieve-all');
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 const jsonData = await response.json();
                 rawData = jsonData.flatMap(item => item.records.records);
