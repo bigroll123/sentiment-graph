@@ -122,10 +122,15 @@
             });
 
             // Prepare Data for Graph
-            const processedGraphData = Object.keys(groupedData).reduce((acc, entity) => {
-                acc[entity] = groupedData[entity].total_entity_score / groupedData[entity].count;
-                return acc;
-            }, {});
+            const processedGraphData = {};
+            Object.keys(groupedData).forEach(entity => {
+                processedGraphData[entity] = Object.entries(groupedData[entity])
+                    .map(([date, values]) => ({
+                        date,
+                        avg_entity_score: (values.total_entity_score / values.count).toFixed(2)
+                    }))
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+            });
 
             // Prepare Data for Table
             const processedTableData = Object.entries(groupedData).map(([entity, values]) => ({
@@ -169,24 +174,26 @@
             if (chart) chart.destroy();
             const ctx = document.getElementById('myChart').getContext('2d');
 
+            const datasets = Object.keys(data).map((entity, index) => ({
+                label: entity,
+                data: data[entity].map(i => i.avg_entity_score),
+                borderColor: `hsl(${index * 50}, 70%, 50%)`,
+                borderWidth: 2,
+                fill: false
+            }));
+
             chart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: Object.keys(data),
-                    datasets: [{
-                        label: 'Avg Entity Score',
-                        data: Object.values(data),
-                        borderColor: 'blue',
-                        backgroundColor: 'rgba(0, 0, 255, 0.2)',
-                        borderWidth: 2,
-                        fill: false
-                    }]
+                    labels: data[Object.keys(data)[0]].map(item => item.date),
+                    datasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true }
+                        y: { beginAtZero: true },
+                        x: { ticks: { maxTicksLimit: 10 } }
                     }
                 }
             });
