@@ -21,7 +21,7 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         canvas {
-            max-height: 800px; /* Limit graph height to one A4 page */
+            max-height: 600px; /* Limit graph height to 600px */
             margin-top: 20px;
         }
         #loading {
@@ -80,33 +80,41 @@
             rawData.forEach(item => {
                 const domain = extractDomain(item.url);
                 const date = new Date(item.created_at * 1000).toISOString().split('T')[0]; // Convert epoch to YYYY-MM-DD format
-
                 if ((selectedEntities.length > 0 && !selectedEntities.includes(item.entity)) || 
                     (selectedDomains.length > 0 && !selectedDomains.includes(domain))) {
                     return;
                 }
 
-                if (!groupedData[date]) {
-                    groupedData[date] = { count: 0, total_entity_score: 0 };
+                if (!groupedData[item.entity]) {
+                    groupedData[item.entity] = {};
                 }
 
-                groupedData[date].count++;
-                groupedData[date].total_entity_score += item.entity_score;
+                if (!groupedData[item.entity][date]) {
+                    groupedData[item.entity][date] = { count: 0, total_entity_score: 0 };
+                }
+
+                groupedData[item.entity][date].count++;
+                groupedData[item.entity][date].total_entity_score += item.entity_score;
             });
 
-            let processedData = Object.entries(groupedData)
-                .map(([date, values]) => ({
-                    date,
-                    avg_entity_score: (values.total_entity_score / values.count).toFixed(2)
-                }))
-                .sort((a, b) => new Date(a.date) - new Date(b.date)); // Ensure chronological order
+            const processedData = {};
+            Object.keys(groupedData).forEach(entity => {
+                processedData[entity] = Object.entries(groupedData[entity])
+                    .map(([date, values]) => ({
+                        date,
+                        avg_entity_score: (values.total_entity_score / values.count).toFixed(2)
+                    }))
+                    .sort((a, b) => new Date(a.date) - new Date(b.date)); // Ensure chronological order
+            });
 
             // Reduce data points if too many dates exist
-            const maxDataPoints = 50; // Limit number of dates shown
-            if (processedData.length > maxDataPoints) {
-                const step = Math.ceil(processedData.length / maxDataPoints);
-                processedData = processedData.filter((_, index) => index % step === 0);
-            }
+            Object.keys(processedData).forEach(entity => {
+                const maxDataPoints = 50; // Limit number of dates shown
+                if (processedData[entity].length > maxDataPoints) {
+                    const step = Math.ceil(processedData[entity].length / maxDataPoints);
+                    processedData[entity] = processedData[entity].filter((_, index) => index % step === 0);
+                }
+            });
 
             populateFilters();
             updateGraph(processedData);
@@ -148,25 +156,28 @@
         function updateGraph(data) {
             if (chart) chart.destroy();
             const ctx = document.getElementById('myChart').getContext('2d');
+
+            const datasets = Object.keys(data).map((entity, index) => ({
+                label: entity,
+                data: data[entity].map(i => i.avg_entity_score),
+                borderColor: `hsl(${index * 50}, 70%, 50%)`, // Assign a unique color per entity
+                backgroundColor: `hsla(${index * 50}, 70%, 50%, 0.2)`,
+                borderWidth: 2,
+                fill: true
+            }));
+
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.map(item => item.date),
-                    datasets: [{
-                        label: 'Avg Entity Score per Day',
-                        data: data.map(i => i.avg_entity_score),
-                        borderColor: 'blue',
-                        backgroundColor: 'rgba(0, 0, 255, 0.2)',
-                        borderWidth: 2,
-                        fill: true
-                    }]
+                    labels: data[Object.keys(data)[0]].map(item => item.date),
+                    datasets
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false, // Allow height to be controlled
+                    maintainAspectRatio: false,
                     scales: {
                         y: { beginAtZero: true },
-                        x: { ticks: { maxTicksLimit: 10 } } // Limit labels to avoid overcrowding
+                        x: { ticks: { maxTicksLimit: 10 } }
                     }
                 }
             });
