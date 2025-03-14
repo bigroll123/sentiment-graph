@@ -80,7 +80,7 @@
         function aggregateData(selectedDomains = []) {
             const groupedData = {};
             rawData.forEach(item => {
-                const domain = extractDomain(item.url); // Extract domain correctly
+                const domain = extractDomain(item.url);
                 const useDomain = selectedDomains.length > 0;
                 if (useDomain && !selectedDomains.includes(domain)) return;
 
@@ -109,7 +109,7 @@
 
         function extractDomain(url) {
             try {
-                return new URL(`https://${url}`).hostname; // Ensure URL parsing works correctly
+                return new URL(`https://${url}`).hostname;
             } catch (error) {
                 console.error("Invalid URL:", url);
                 return url;
@@ -117,11 +117,18 @@
         }
 
         function populateFilters() {
+            const selectedEntities = $('#entityFilter').val() || [];
+            const selectedDomains = $('#domainFilter').val() || [];
+
             const entitySet = new Set(rawData.map(item => item.entity));
             const domainSet = new Set(rawData.map(item => extractDomain(item.url)));
 
-            $("#entityFilter").empty().append([...entitySet].map(e => `<option>${e}</option>`));
-            $("#domainFilter").empty().append([...domainSet].map(d => `<option>${d}</option>`));
+            $("#entityFilter").empty().append([...entitySet].map(e => 
+                `<option ${selectedEntities.includes(e) ? 'selected' : ''}>${e}</option>`
+            ));
+            $("#domainFilter").empty().append([...domainSet].map(d => 
+                `<option ${selectedDomains.includes(d) ? 'selected' : ''}>${d}</option>`
+            ));
 
             $('.selectpicker').selectpicker('refresh');
         }
