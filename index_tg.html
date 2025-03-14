@@ -21,16 +21,12 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         canvas {
-            max-height: 600px;
+            max-height: 600px; /* Limit graph height to 600px */
             margin-top: 20px;
-            display: none;
+            display: none; /* Hide the graph on first load */
         }
         #loading {
             text-align: center;
-            display: none;
-        }
-        #dataTable {
-            margin-top: 20px;
             display: none;
         }
     </style>
@@ -54,86 +50,81 @@
 
         <div id="loading">Loading data... Please wait.</div>
         <canvas id="myChart"></canvas>
-
-        <!-- Table for Total Average Scores -->
-        <h3 class="mt-4 text-center">Average Scores per Entity</h3>
-        <table id="dataTable" class="table table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Entity</th>
-                    <th>Avg Entity Score</th>
-                    <th>Avg Title Score</th>
-                    <th>Avg News Score</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
     </div>
-
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
 
     <script>
         let rawData = [];
         let chart;
 
         async function fetchData() {
-            $("#loading").show();
+            $("#loading").show(); // Show loading indicator
             try {
                 const response = await fetch('https://senti-wrk.kj-kalin.workers.dev/retrieve-all');
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 const jsonData = await response.json();
                 rawData = jsonData.flatMap(item => item.records.records);
-                populateFilters();
+                populateFilters(); // Only populate filters, DO NOT load graph on first load
             } catch (error) {
                 console.error("Error loading JSON:", error);
             }
-            $("#loading").hide();
+            $("#loading").hide(); // Hide loading indicator
         }
 
         function aggregateData(selectedEntities = [], selectedDomains = []) {
             if (selectedEntities.length === 0) {
-                $("#myChart").hide();
-                $("#dataTable").hide();
+                $("#myChart").hide(); // Hide graph if no entity is selected
                 return;
             }
 
-            $("#myChart").show();
-            $("#dataTable").show();
+            $("#myChart").show(); // Show graph only if entities are selected
 
             const groupedData = {};
+
             rawData.forEach(item => {
                 const domain = extractDomain(item.url);
-                const date = new Date(item.created_at * 1000).toISOString().split('T')[0];
-
+                const date = new Date(item.created_at * 1000).toISOString().split('T')[0]; // Convert epoch to YYYY-MM-DD format
                 if ((selectedEntities.length > 0 && !selectedEntities.includes(item.entity)) || 
                     (selectedDomains.length > 0 && !selectedDomains.includes(domain))) {
                     return;
                 }
 
                 if (!groupedData[item.entity]) {
-                    groupedData[item.entity] = { totalCount: 0, totalEntityScore: 0, totalTitleScore: 0, totalNewsScore: 0, dailyScores: {} };
+                    groupedData[item.entity] = {};
                 }
 
-                groupedData[item.entity].totalCount++;
-                groupedData[item.entity].totalEntityScore += item.entity_score;
-                groupedData[item.entity].totalTitleScore += item.title_score;
-                groupedData[item.entity].totalNewsScore += item.overall_score;
-
-                if (!groupedData[item.entity].dailyScores[date]) {
-                    groupedData[item.entity].dailyScores[date] = { count: 0, total: 0 };
+                if (!groupedData[item.entity][date]) {
+                    groupedData[item.entity][date] = { count: 0, total_entity_score: 0 };
                 }
 
-                groupedData[item.entity].dailyScores[date].count++;
-                groupedData[item.entity].dailyScores[date].total += item.entity_score;
+                groupedData[item.entity][date].count++;
+                groupedData[item.entity][date].total_entity_score += item.entity_score;
             });
 
-            updateGraph(groupedData);
-            populateTable(groupedData);
+            const processedData = {};
+            Object.keys(groupedData).forEach(entity => {
+                processedData[entity] = Object.entries(groupedData[entity])
+                    .map(([date, values]) => ({
+                        date,
+                        avg_entity_score: (values.total_entity_score / values.count).toFixed(2)
+                    }))
+                    .sort((a, b) => new Date(a.date) - new Date(b.date)); // Ensure chronological order
+            });
+
+            // Reduce data points if too many dates exist
+            Object.keys(processedData).forEach(entity => {
+                const maxDataPoints = 50; // Limit number of dates shown
+                if (processedData[entity].length > maxDataPoints) {
+                    const step = Math.ceil(processedData[entity].length / maxDataPoints);
+                    processedData[entity] = processedData[entity].filter((_, index) => index % step === 0);
+                }
+            });
+
+            updateGraph(processedData);
         }
 
         function extractDomain(url) {
@@ -168,39 +159,30 @@
 
             const datasets = Object.keys(data).map((entity, index) => ({
                 label: entity,
-                data: Object.entries(data[entity].dailyScores).map(([date, values]) => ({ x: new Date(date), y: (values.total / values.count).toFixed(2) })),
-                borderColor: `hsl(${index * 50}, 70%, 50%)`,
+                data: data[entity].map(i => i.avg_entity_score),
+                borderColor: `hsl(${index * 50}, 70%, 50%)`, // Unique color per entity
                 borderWidth: 2,
-                fill: false
+                fill: false // No background fill, just lines
             }));
 
             chart = new Chart(ctx, {
                 type: 'line',
-                data: { datasets },
+                data: {
+                    labels: data[Object.keys(data)[0]].map(item => item.date),
+                    datasets
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { x: { type: 'time', time: { unit: 'day' } }, y: { beginAtZero: true } }
+                    scales: {
+                        y: { beginAtZero: true },
+                        x: { ticks: { maxTicksLimit: 10 } }
+                    }
                 }
             });
         }
 
-        function populateTable(data) {
-            let tableData = Object.keys(data).map(entity => [
-                entity,
-                (data[entity].totalEntityScore / data[entity].totalCount).toFixed(2),
-                (data[entity].totalTitleScore / data[entity].totalCount).toFixed(2),
-                (data[entity].totalNewsScore / data[entity].totalCount).toFixed(2)
-            ]);
-
-            let table = $('#dataTable').DataTable();
-            table.clear().rows.add(tableData).draw();
-        }
-
-        $(document).ready(() => {
-            fetchData();
-            $('#dataTable').DataTable();
-        });
+        $(document).ready(fetchData);
     </script>
 </body>
 </html>
