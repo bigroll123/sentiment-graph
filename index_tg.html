@@ -23,6 +23,7 @@
         canvas {
             max-height: 600px; /* Limit graph height to 600px */
             margin-top: 20px;
+            display: none; /* Hide the graph on first load */
         }
         #loading {
             text-align: center;
@@ -67,7 +68,7 @@
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 const jsonData = await response.json();
                 rawData = jsonData.flatMap(item => item.records.records);
-                aggregateData();
+                populateFilters(); // Only populate filters, DO NOT load graph on first load
             } catch (error) {
                 console.error("Error loading JSON:", error);
             }
@@ -75,6 +76,13 @@
         }
 
         function aggregateData(selectedEntities = [], selectedDomains = []) {
+            if (selectedEntities.length === 0) {
+                $("#myChart").hide(); // Hide graph if no entity is selected
+                return;
+            }
+
+            $("#myChart").show(); // Show graph only if entities are selected
+
             const groupedData = {};
 
             rawData.forEach(item => {
@@ -116,7 +124,6 @@
                 }
             });
 
-            populateFilters();
             updateGraph(processedData);
         }
 
@@ -130,18 +137,11 @@
         }
 
         function populateFilters() {
-            const selectedEntities = $('#entityFilter').val() || [];
-            const selectedDomains = $('#domainFilter').val() || [];
-
             const entitySet = new Set(rawData.map(item => item.entity));
             const domainSet = new Set(rawData.map(item => extractDomain(item.url)));
 
-            $("#entityFilter").empty().append([...entitySet].map(e => 
-                `<option ${selectedEntities.includes(e) ? 'selected' : ''}>${e}</option>`
-            ));
-            $("#domainFilter").empty().append([...domainSet].map(d => 
-                `<option ${selectedDomains.includes(d) ? 'selected' : ''}>${d}</option>`
-            ));
+            $("#entityFilter").empty().append([...entitySet].map(e => `<option>${e}</option>`));
+            $("#domainFilter").empty().append([...domainSet].map(d => `<option>${d}</option>`));
 
             $('.selectpicker').selectpicker('refresh');
         }
@@ -160,10 +160,9 @@
             const datasets = Object.keys(data).map((entity, index) => ({
                 label: entity,
                 data: data[entity].map(i => i.avg_entity_score),
-                borderColor: `hsl(${index * 50}, 70%, 50%)`, // Assign a unique color per entity
-                backgroundColor: `hsla(${index * 50}, 70%, 50%, 0.2)`,
+                borderColor: `hsl(${index * 50}, 70%, 50%)`, // Unique color per entity
                 borderWidth: 2,
-                fill: true
+                fill: false // No background fill, just lines
             }));
 
             chart = new Chart(ctx, {
