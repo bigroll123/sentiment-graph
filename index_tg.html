@@ -121,27 +121,8 @@
                 groupedData[item.entity].total_news_score += item.overall_score;
             });
 
-            // Prepare Data for Graph
-            const processedGraphData = {};
-            Object.keys(groupedData).forEach(entity => {
-                processedGraphData[entity] = Object.entries(groupedData[entity])
-                    .map(([date, values]) => ({
-                        date,
-                        avg_entity_score: (values.total_entity_score / values.count).toFixed(2)
-                    }))
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-            });
-
-            // Prepare Data for Table
-            const processedTableData = Object.entries(groupedData).map(([entity, values]) => ({
-                entity,
-                avg_entity_score: (values.total_entity_score / values.count).toFixed(2),
-                avg_title_score: (values.total_title_score / values.count).toFixed(2),
-                avg_news_score: (values.total_news_score / values.count).toFixed(2)
-            }));
-
-            updateGraph(processedGraphData);
-            populateTable(processedTableData);
+            updateGraph(groupedData);
+            populateTable(groupedData);
         }
 
         function extractDomain(url) {
@@ -176,7 +157,7 @@
 
             const datasets = Object.keys(data).map((entity, index) => ({
                 label: entity,
-                data: data[entity].map(i => i.avg_entity_score),
+                data: [data[entity].total_entity_score / data[entity].count],
                 borderColor: `hsl(${index * 50}, 70%, 50%)`,
                 borderWidth: 2,
                 fill: false
@@ -185,23 +166,29 @@
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data[Object.keys(data)[0]].map(item => item.date),
+                    labels: Object.keys(data),
                     datasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true },
-                        x: { ticks: { maxTicksLimit: 10 } }
+                        y: { beginAtZero: true }
                     }
                 }
             });
         }
 
         function populateTable(data) {
+            let tableData = Object.keys(data).map(entity => [
+                entity,
+                (data[entity].total_entity_score / data[entity].count).toFixed(2),
+                (data[entity].total_title_score / data[entity].count).toFixed(2),
+                (data[entity].total_news_score / data[entity].count).toFixed(2)
+            ]);
+
             let table = $('#dataTable').DataTable();
-            table.clear().rows.add(data.map(row => [row.entity, row.avg_entity_score, row.avg_title_score, row.avg_news_score])).draw();
+            table.clear().rows.add(tableData).draw();
         }
 
         $(document).ready(() => {
