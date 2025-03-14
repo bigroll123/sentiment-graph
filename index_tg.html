@@ -55,7 +55,7 @@
         <div id="loading">Loading data... Please wait.</div>
         <canvas id="myChart"></canvas>
 
-        <!-- Table for Average Scores -->
+        <!-- Table for Total Average Scores -->
         <table id="dataTable" class="table table-striped">
             <thead class="table-dark">
                 <tr>
@@ -106,19 +106,28 @@
             const groupedData = {};
             rawData.forEach(item => {
                 const domain = extractDomain(item.url);
+                const date = new Date(item.created_at * 1000).toISOString().split('T')[0];
+
                 if ((selectedEntities.length > 0 && !selectedEntities.includes(item.entity)) || 
                     (selectedDomains.length > 0 && !selectedDomains.includes(domain))) {
                     return;
                 }
 
                 if (!groupedData[item.entity]) {
-                    groupedData[item.entity] = { count: 0, total_entity_score: 0, total_title_score: 0, total_news_score: 0 };
+                    groupedData[item.entity] = { totalCount: 0, totalEntityScore: 0, totalTitleScore: 0, totalNewsScore: 0, dailyScores: {} };
                 }
 
-                groupedData[item.entity].count++;
-                groupedData[item.entity].total_entity_score += item.entity_score;
-                groupedData[item.entity].total_title_score += item.title_score;
-                groupedData[item.entity].total_news_score += item.overall_score;
+                groupedData[item.entity].totalCount++;
+                groupedData[item.entity].totalEntityScore += item.entity_score;
+                groupedData[item.entity].totalTitleScore += item.title_score;
+                groupedData[item.entity].totalNewsScore += item.overall_score;
+
+                if (!groupedData[item.entity].dailyScores[date]) {
+                    groupedData[item.entity].dailyScores[date] = { count: 0, total: 0 };
+                }
+
+                groupedData[item.entity].dailyScores[date].count++;
+                groupedData[item.entity].dailyScores[date].total += item.entity_score;
             });
 
             updateGraph(groupedData);
@@ -157,7 +166,7 @@
 
             const datasets = Object.keys(data).map((entity, index) => ({
                 label: entity,
-                data: [data[entity].total_entity_score / data[entity].count],
+                data: Object.entries(data[entity].dailyScores).map(([date, values]) => ({ x: date, y: (values.total / values.count).toFixed(2) })),
                 borderColor: `hsl(${index * 50}, 70%, 50%)`,
                 borderWidth: 2,
                 fill: false
@@ -165,16 +174,11 @@
 
             chart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: Object.keys(data),
-                    datasets
-                },
+                data: { datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+                    scales: { x: { type: 'time', time: { unit: 'day' } }, y: { beginAtZero: true } }
                 }
             });
         }
@@ -182,9 +186,9 @@
         function populateTable(data) {
             let tableData = Object.keys(data).map(entity => [
                 entity,
-                (data[entity].total_entity_score / data[entity].count).toFixed(2),
-                (data[entity].total_title_score / data[entity].count).toFixed(2),
-                (data[entity].total_news_score / data[entity].count).toFixed(2)
+                (data[entity].totalEntityScore / data[entity].totalCount).toFixed(2),
+                (data[entity].totalTitleScore / data[entity].totalCount).toFixed(2),
+                (data[entity].totalNewsScore / data[entity].totalCount).toFixed(2)
             ]);
 
             let table = $('#dataTable').DataTable();
